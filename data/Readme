@@ -1,0 +1,103 @@
+## 1. 작업 목표
+
+Sleep Health and Lifestyle Dataset을 활용하여 사용자가 쉽게 입력할 수 있는 생활습관 및 기본 건강 정보를 기반으로 `Lifestyle_Risk_Index(라이프스타일 위험 정보)` 를예측할 수 있도록 데이터 전처리를 수행하였다.
+
+예측 모델에서는 사용자가 직접 입력하거나 입력값으로부터 계산 가능한 정보만 사용하도록 입력 변수를 선정하였다.
+
+## 2. 최종 입력 변수
+
+총 9개의 입력 변수를 사용한다.
+
+### 숫자형 변수
+
+- `Age` : 나이(범위: 18 ~ 80세)
+- `BMI` : 체질량지수(범위: 18.0 ~ 45.0)
+- `Sleep_Duration` : 평균 수면 시간(범위: 2.5 ~ 10.0시간)
+- `Caffeine_Intake_mg` : 하루 카페인 섭취량(범위: 0 ~ 476mg)
+- `Physical_Activity_Minutes` : 하루 신체 활동 시간(범위: 0 ~ 128.3분)
+
+### 범주형 변수
+
+- `Gender` : 성별(범주: `Female`, `Male` )
+- `Alcohol_Consumption` : 음주 여부(범주: `No`, `Yes` )
+- `Smoking_Status` : 흡연 여부(범주: `No`, `Yes` )
+- `Stress_Level` : 스트레스 수준(범주: Low, Medium, High)
+
+예측 대상(Target)은 다음과 같다.
+
+- `Lifestyle_Risk_Index` : 생활습관 위험 지수
+
+## 3. 사용자 입력 방식
+
+서비스에서는 사용자가 모델 변수 자체를 모두 직접 입력하지 않아도 되도록 일부 값을 자동 계산할 예정이다.
+
+- 생년월일 → `Age` 계산
+- 키 + 몸무게 → `BMI` 계산
+- 취침시간 + 기상시간 → `Sleep_Duration` 계산
+- 카페인 섭취량 → `Caffeine_Intake_mg`
+- 스트레스 수준 → `Stress_Level`
+- 음주 여부 → `Alcohol_Consumption`
+- 운동 시간 → `Physical_Activity_Minutes`
+- 흡연 여부 → `Smoking_Status`
+- 성별 → `Gender`
+
+## 4. 데이터 전처리
+
+전체 데이터를 학습 데이터 80%, 테스트 데이터 20%로 분리하였다.
+
+- 학습 데이터: 24,000건
+- 테스트 데이터: 6,000건
+
+숫자형 변수는 `StandardScaler`를 사용하여 표준화하였다.
+
+숫자형 변수:
+
+- Age
+- BMI
+- Sleep_Duration
+- Caffeine_Intake_mg
+- Stress_Level
+- Physical_Activity_Minutes
+
+범주형 변수는 `OneHotEncoder`를 사용하여 머신러닝 모델이 처리할 수 있는 숫자 형태로 변환하였다.
+
+범주형 변수:
+
+- Gender
+- Alcohol_Consumption
+- Smoking_Status
+
+One-Hot Encoding 결과 범주형 변수가 각각 Yes/No 또는 Male/Female 형태로 분리되어 최종 입력 데이터는 14개의 Feature로 변환되었다.
+
+## 5. 전처리 결과
+
+최종 데이터 형태:
+
+- `X_train`: (24000, 12)
+- `X_test`: (6000, 12)
+- `y_train`: 24,000건
+- `y_test`: 6,000건
+
+전처리에 사용한 `StandardScaler`, `OneHotEncoder`, 숫자형/범주형 컬럼 정보와 학습·테스트 데이터를 함께 저장하여 이후 머신러닝 모델 학습 및 Streamlit 서비스에서도 동일한 전처리 방식을 사용할 수 있도록 구성하였다.
+
+최종 산출물:
+
+`sleep_preprocessing_yt.pkl`
+
+## 6. 활용 계획
+
+전처리된 데이터를 회귀 모델 학습에 전달하여 `Lifestyle_Risk_Index`를 예측한다.
+
+최종 서비스 흐름은 다음과 같이 구성할 예정이다.
+
+사용자 정보 입력
+
+→ Age, BMI, Sleep Duration 등 계산
+
+→ 동일한 전처리 적용
+
+→ 머신러닝 모델을 통한 Lifestyle Risk Index 예측
+
+→ OpenAI API에 예측 결과 전달
+
+→ 사용자의 생활습관 위험 요인 및 개선 가이드 제공
