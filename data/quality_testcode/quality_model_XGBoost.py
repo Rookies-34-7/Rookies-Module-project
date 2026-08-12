@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import ( accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix )
 
 # 1. 데이터 로드
-df = joblib.load('sleep_preprocessed.pkl')
+df = joblib.load('../quality_data/quality_prep.pkl')
 
 # 2. 저장된 변수들 추출
 X_train = df['X_train']

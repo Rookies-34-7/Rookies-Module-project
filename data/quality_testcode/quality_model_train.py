@@ -9,7 +9,7 @@ sklearn.set_config(display='text')
 
 
 # 1. 데이터 로드
-df = joblib.load('sleep_preprocessed.pkl')
+df = joblib.load('../quality_data/quality_prep.pkl')
 
 
 # 2. 저장된 변수들 추출
@@ -69,11 +69,11 @@ print("\n")
 
 
 # CSV 저장
-cm_df.to_csv('lifestyle.csv', index=True, encoding='utf-8-sig')
+cm_df.to_csv('../quality_data/quality_confusionmatrix.csv', index=True, encoding='utf-8-sig')
 
 
 # pkl 저장
-joblib.dump(model, 'rf_model_final.pkl')
+joblib.dump(model, '../quality_data/quality_model_info.pkl')
 
 
 final_data = {
@@ -81,6 +81,6 @@ final_data = {
     'preprocessor': preprocessor,
     'labels': labels
 }
-joblib.dump(final_data, 'lifestyle.pkl')
+joblib.dump(final_data, '../quality_data/quality_model_info.pkl')
 
 
