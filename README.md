@@ -14,7 +14,7 @@
 ##  2. 주요 성능 지표 
 `class_weight='balanced'` 옵션을 적용하여 클래스 불균형을 완화한 후 평가한 모델 성능입니다.
 
-| Metric | Score | Description |
+| Metric | Score |
 | :--- | :---: | :--- |
 | **Accuracy (정확도)** | **0.9733** | 
 | **Precision (정밀도)** | **0.9744** |
