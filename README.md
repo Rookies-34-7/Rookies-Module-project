@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #  모델링
 
 수면 건강 및 생활 습관 데이터를 바탕으로 **Quality of Sleep**을 예측하는 모델입니다.
@@ -33,3 +34,11 @@
 - **Libraries:** `scikit-learn`, `pandas`, `joblib`
 - **Environment:** VS Code
 
+### 4.모델 성능 비교 (Random Forest vs XGBoost)
+
+| Model | Accuracy | Precision | Recall | F1-Score | Confusion Matrix 비고 |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Random Forest** | 0.9733 | 0.9744 | 0.9733 | 0.9731 | 1건 오분류 (`Medium` → `High`) |
+| **XGBoost** | **1.0000** | **1.0000** | **1.0000** | **1.0000** | **0건 오분류 (전부 정답)** |
+
+> **분석 요약:** XGBoosting 알고리즘 특성상 이전 트리의 오차를 순차적으로 보완하는 XGBoost가 경계선 부근의 미세한 패턴까지 오차 없이 100% 정확하게 분류했습니다.
