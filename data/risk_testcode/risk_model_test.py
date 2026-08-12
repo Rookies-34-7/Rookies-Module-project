@@ -4,7 +4,7 @@ import numpy as np
 
 # 최종 모델 불러오기
 model_package = joblib.load(
-    "lifestyle_risk_model.pkl"
+    "../../model/lifestyle_risk_model.pkl"
 )
 
 model = model_package["model"]
