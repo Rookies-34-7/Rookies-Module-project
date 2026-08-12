@@ -21,13 +21,14 @@
 | **Recall (재현율)** | **0.9733** |
 | **F1-Score (F1점수)** | **0.9731** | 
 
-### 🔲 혼동 행렬 (Confusion Matrix)
-                    Pred_High  Pred_Low  Pred_Medium
-Actual_High           36         0            0
-Actual_Low             0         2            0
-Actual_Medium          1         0           36
+## 혼동 행렬 (Confusion Matrix)
+| Actual \ Predicted | Pred_High | Pred_Low | Pred_Medium |
+| :--- | :---: | :---: | :---: |
+| **Actual_High** | **36** | 0 | 0 |
+| **Actual_Low** | 0 | **2** | 0 |
+| **Actual_Medium** | 1 | 0 | **36** |
 
-## 🛠️ 3. 기술 스택 및 개발 환경 (Tech Stack)
+##  3. 기술 스택 및 개발 환경 (Tech Stack)
 - **Language:** Python 3.12
 - **Libraries:** `scikit-learn`, `pandas`, `joblib`
 - **Environment:** VS Code
