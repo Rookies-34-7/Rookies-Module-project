@@ -1,0 +1,194 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+/* ── 토큰 ──────────────────────────────────────────────
+   회색 계열은 흰색/연회색 배경에서 WCAG AA(4.5:1) 이상으로 맞춰둔 값입니다. */
+:root{
+  --ink:#14283a;      /* 본문 */
+  --ink2:#41576a;     /* 보조 본문 */
+  --muted:#5a6d7a;    /* 라벨·캡션 */
+  --line:#dce7ed;
+  --line2:#eef3f6;
+  --bg:#f7faf9;
+  --blue:#2265e5;
+  --blue-dark:#174fb9;
+}
+
+/* ── 레이아웃 ───────────────────────────────────────── */
+html,body,[class*="css"],[data-testid="stAppViewContainer"]{font-family:'Pretendard',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+html,body{overflow:auto!important}
+[data-testid="stAppViewContainer"]{background:var(--bg)}
+[data-testid="stHeader"]{background:rgba(247,250,249,.86)}
+.block-container{max-width:1060px;padding-top:2.25rem;padding-bottom:5rem}
+h1,h2,h3{letter-spacing:-.045em!important}
+
+/* ── 헤더 / 타이포 ──────────────────────────────────── */
+.brand{font-size:1.55rem;font-weight:800;margin-bottom:2.5rem;display:flex;align-items:center;gap:.65rem}
+.mark{width:38px;height:38px;border-radius:50%;display:inline-grid;place-items:center;background:var(--blue);color:#fff;box-shadow:inset -9px -4px 0 #184eb9}
+.blue{color:var(--blue)}
+.eyebrow{color:var(--blue);font-size:.8rem;letter-spacing:.15em;font-weight:800;margin-bottom:.85rem}
+.hero{font-size:3.35rem;line-height:1.1;font-weight:800;letter-spacing:-.065em;margin-bottom:1rem}
+.sub{color:var(--ink2);font-size:1.05rem;line-height:1.7;max-width:700px;margin-bottom:1.75rem}
+.form-title{font-size:1.4rem;font-weight:800;letter-spacing:-.035em;margin:.4rem 0 1.3rem}
+.detail-section-title{font-size:1.08rem;font-weight:800;color:#214f83;margin:.1rem 0 1rem;padding:.7rem .9rem;border-radius:10px;background:rgba(222,236,252,.78);border:1px solid #d2e2f2}
+.notice{font-size:.85rem;line-height:1.6;color:#4f6270;background:#eef4f5;padding:.9rem 1.1rem;border-radius:10px;margin-top:1rem}
+.foot{margin-top:64px;padding:24px 0 8px;border-top:1px solid var(--line);text-align:center;color:#5c6f79;font-size:.88rem;font-weight:600}
+
+/* ── 입력 폼 ────────────────────────────────────────── */
+[data-testid="stWidgetLabel"] p,label[data-testid="stWidgetLabel"] p{font-size:1rem!important;font-weight:650!important;line-height:1.45!important}
+.bmi{background:#eaf1ff;border:1px solid #c8d9fc;color:var(--blue-dark);border-radius:12px;padding:1rem 1.2rem;margin:.5rem 0 1rem;font-size:1.05rem;font-weight:700}
+.stButton>button,.stFormSubmitButton>button{border-radius:10px;font-size:1.02rem;font-weight:700;border:0;background:var(--blue);color:#fff;min-height:3.1rem}
+.stButton>button:hover,.stFormSubmitButton>button:hover{background:var(--blue-dark);color:#fff;border:0}
+/* 탭 라벨이 기본값에선 너무 작아 크기와 대비를 올립니다. */
+[data-baseweb="tab"]{font-size:1.02rem!important}
+[data-baseweb="tab"] p{font-size:1.02rem!important;font-weight:700!important;color:var(--muted)}
+[data-baseweb="tab"][aria-selected="true"] p{color:var(--blue)}
+
+/* ── 결과: 종합 판정 ────────────────────────────────── */
+.verdict-label{font-size:1rem;font-weight:700;color:var(--muted);margin:.2rem 0 .55rem}
+.verdict{border-radius:16px;padding:1.15rem 1.2rem;display:flex;align-items:center;justify-content:center;gap:.55rem;font-size:2.4rem;font-weight:800;letter-spacing:-.05em;line-height:1.2}
+.verdict-good{background:#e7f8f0;border:1px solid #b9e6d3;color:#0f7a58}
+.verdict-bad{background:#fdecec;border:1px solid #f3c6c6;color:#b53232}
+
+/* ── 결과: 지표 카드 ────────────────────────────────────
+   라벨 → 수치 → 상태 3단 위계. 배지는 margin-top:auto라 카드 높이가 달라도 아래쪽에 정렬됩니다. */
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:1.15rem 1.25rem;min-height:152px;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(20,40,58,.04)}
+.card-label{font-size:.95rem;font-weight:600;color:var(--muted);letter-spacing:-.01em;line-height:1.4}
+.card-value{font-size:2rem;font-weight:800;letter-spacing:-.045em;line-height:1.15;margin:.4rem 0 .9rem;font-variant-numeric:tabular-nums}
+.pill{align-self:flex-start;margin-top:auto;padding:.42rem .78rem;border-radius:999px;font-size:.9rem;font-weight:700;line-height:1}
+.pill-good{color:#0f7a58;background:#e7f8f0}
+.pill-warn{color:#8a5a00;background:#fff4cc}
+.pill-bad{color:#b53232;background:#fdecec}
+[data-testid="stMetric"]{background:#fff;border:1px solid var(--line);padding:1rem;border-radius:14px}
+
+/* ── 결과: 상세 데이터 목록 ─────────────────────────────
+   라벨은 왼쪽, 값은 오른쪽 양끝 정렬 + 구분선으로 훑어보기 쉽게. */
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:0 2.75rem}
+.dl-row{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.72rem 0;border-bottom:1px solid var(--line2)}
+.dl-k{font-size:.95rem;font-weight:600;color:var(--muted)}
+.dl-v{font-size:1.02rem;font-weight:700;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── TIP 카드 ───────────────────────────────────────── */
+.tip{background:var(--ink);color:#fff;padding:1.7rem 1.8rem;border-radius:18px;margin-top:1.2rem}
+.tip .eyebrow{color:#8ab4ff}
+.tip h3{font-size:1.35rem;margin-bottom:.6rem}
+.tip p{color:#d3dee3;font-size:1.02rem;line-height:1.7;margin-bottom:0}
+.st-key-inline_coaching{margin-top:1.2rem;padding:1.35rem 1.45rem;border-radius:16px;background:rgba(239,247,255,.94);border:1px solid #c9dff3;box-shadow:0 12px 32px rgba(25,72,130,.12)}
+.st-key-inline_coaching h4{color:#174f91;margin-bottom:.65rem}.st-key-inline_coaching p,.st-key-inline_coaching li{color:#294a68;line-height:1.75}
+
+/* ── 챗봇 FAB / 다이얼로그 ──────────────────────────── */
+.st-key-chat_fab{position:fixed;right:28px;bottom:24px;z-index:9999;width:58px!important}
+.st-key-chat_fab button{width:58px!important;height:58px!important;min-height:58px!important;border-radius:50%!important;padding:0!important;font-size:1.45rem!important;box-shadow:0 10px 28px rgba(34,101,229,.38)!important}
+.st-key-chat_fab button p{font-size:1.35rem!important}
+div[data-testid="stDialog"]>div:first-child{margin-left:auto;margin-right:1.5rem;margin-top:auto;margin-bottom:1.5rem;max-width:420px}
+/* 다이얼로그가 열려도 뒤쪽 페이지를 계속 스크롤할 수 있게 합니다. */
+[data-baseweb="modal"],div[data-testid="stDialog"]{pointer-events:none!important}
+[data-baseweb="modal"] [role="dialog"],div[data-testid="stDialog"]>div:first-child{pointer-events:auto!important}
+
+/* ── 밤하늘 도시 테마 ───────────────────────────────────
+   그래프 설정에는 영향을 주지 않고 페이지와 사용자 정의 UI만 꾸밉니다. */
+[data-testid="stAppViewContainer"]{
+  background-image:
+    linear-gradient(180deg,rgba(7,24,66,.32),rgba(5,17,48,.64)),
+    url("data:image/jpeg;base64,__SOMNIA_BACKGROUND__");
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+}
+[data-testid="stHeader"]{background:rgba(7,24,58,.3);backdrop-filter:blur(12px)}
+.block-container{
+  margin-top:1.25rem;
+  margin-bottom:2rem;
+  padding:2.5rem 2.75rem 4.5rem;
+  border:1px solid rgba(194,222,255,.58);
+  border-radius:28px;
+  background:linear-gradient(145deg,rgba(249,252,255,.94),rgba(238,246,255,.89));
+  box-shadow:0 28px 80px rgba(2,12,42,.46),inset 0 1px 0 rgba(255,255,255,.8);
+  backdrop-filter:blur(18px) saturate(125%);
+}
+.mark{
+  background:linear-gradient(145deg,#78d6ff,#416fe2);
+  box-shadow:0 0 28px rgba(82,174,255,.55),inset -8px -4px 0 rgba(39,70,167,.45);
+}
+.blue,.eyebrow{color:#2368d9}
+.hero{color:#102b55;text-shadow:0 8px 30px rgba(50,102,177,.12)}
+.sub{color:#49637d}
+[data-baseweb="tab-list"]{
+  padding:.35rem;
+  border:1px solid rgba(76,128,199,.14);
+  border-radius:14px;
+  background:rgba(221,235,252,.58);
+}
+[data-baseweb="tab"]{border-radius:10px}
+[data-baseweb="tab"][aria-selected="true"]{background:rgba(255,255,255,.9);box-shadow:0 5px 18px rgba(38,86,150,.1)}
+.stButton>button,.stFormSubmitButton>button{
+  background:linear-gradient(135deg,#356fdc,#5ab5e2);
+  box-shadow:0 9px 24px rgba(35,101,190,.25);
+  transition:transform .16s ease,box-shadow .16s ease;
+}
+.stButton>button:hover,.stFormSubmitButton>button:hover{
+  background:linear-gradient(135deg,#2b62cd,#48a7d8);
+  transform:translateY(-1px);
+  box-shadow:0 12px 30px rgba(35,101,190,.32);
+}
+.card,[data-testid="stMetric"]{box-shadow:0 10px 30px rgba(30,74,132,.1);border-color:#d3e2f1}
+.tip{
+  background:linear-gradient(135deg,#102b55,#1d4c82);
+  border:1px solid rgba(136,197,255,.3);
+  box-shadow:0 16px 38px rgba(9,35,73,.24);
+}
+.notice{border:1px solid #d9e8f2;background:rgba(238,246,250,.88)}
+.foot{border-color:#cfdeeb;color:#587087}
+[data-baseweb="popover"]{border:1px solid #c7dcf0;box-shadow:0 18px 55px rgba(3,20,52,.28)}
+@media(max-width:700px){
+  [data-testid="stAppViewContainer"]{background-attachment:scroll}
+  .block-container{margin-top:.5rem;padding:1.4rem 1rem 3.5rem;border-radius:20px}
+}
+
+/* ── 반복 재생 배경음악 컨트롤 ───────────────────────── */
+.st-key-bgm_player{
+  position:fixed!important;
+  left:14px!important;
+  bottom:14px!important;
+  z-index:99990!important;
+  width:116px!important;
+  height:32px!important;
+  margin:0!important;
+  padding:1px 5px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(255,255,255,.25)!important;
+  border-radius:10px!important;
+  background:rgba(9,22,48,.62)!important;
+  box-shadow:0 7px 20px rgba(0,0,0,.2)!important;
+}
+.st-key-bgm_player iframe{display:block!important;width:106px!important;height:30px!important;border:0!important}
+
+/* ── 화면 고정형 AI 수면 코치 ──────────────────────────
+   backdrop-filter가 fixed 요소의 기준을 폼으로 바꾸지 않도록 해제합니다. */
+.block-container{backdrop-filter:none}
+.st-key-chat_fab{
+  position:fixed!important;
+  top:auto!important;
+  left:auto!important;
+  right:24px!important;
+  bottom:24px!important;
+  z-index:100000!important;
+  width:58px!important;
+  margin:0!important;
+}
+[data-baseweb="popover"]:has([data-testid="stChatMessage"]),
+[data-baseweb="popover"]:has([data-testid="stPopoverBody"] [data-testid="stChatInput"]){
+  position:fixed!important;
+  inset:auto 24px 94px auto!important;
+  transform:none!important;
+  width:350px!important;
+  max-width:calc(100vw - 32px)!important;
+  max-height:calc(100vh - 120px)!important;
+  z-index:100001!important;
+}
+@media(max-width:700px){
+  .st-key-chat_fab{right:16px!important;bottom:16px!important}
+  [data-baseweb="popover"]:has([data-testid="stChatMessage"]),
+  [data-baseweb="popover"]:has([data-testid="stPopoverBody"] [data-testid="stChatInput"]){
+    inset:auto 16px 84px auto!important;
+  }
+}
