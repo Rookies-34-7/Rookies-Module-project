@@ -217,6 +217,22 @@ if not st.session_state.analyzed:
                 field_label("몸무게 (kg)")
                 d_weight=st.number_input("몸무게 (kg)",min_value=30.0,max_value=200.0,value=None,step=.5,placeholder="몸무게",key="detail_weight",label_visibility="collapsed")
             d_bmi=round(d_weight/((d_height/100)**2),1) if d_height is not None and d_weight is not None else None
+            st.markdown('<div style="height:20px"></div>',unsafe_allow_html=True)
+            with st.expander("선택 입력 항목  ·  혈압, 심박수, 하루 걸음 수"):
+                st.caption("알고 있는 항목만 입력해 주세요. 입력하지 않아도 분석할 수 있습니다.")
+                bp_sys_col,bp_dia_col=st.columns(2)
+                with bp_sys_col:
+                    field_label("수축기 혈압 (mmHg)",False)
+                    d_sys=st.number_input("수축기 혈압 (mmHg)",min_value=70,max_value=250,value=None,step=1,placeholder="예: 120",help="혈압계에 크게 표시되는 위쪽 숫자입니다.",label_visibility="collapsed")
+                with bp_dia_col:
+                    field_label("이완기 혈압 (mmHg)",False)
+                    d_dia=st.number_input("이완기 혈압 (mmHg)",min_value=40,max_value=150,value=None,step=1,placeholder="예: 80",help="혈압계에 표시되는 아래쪽 숫자입니다.",label_visibility="collapsed")
+                field_label("심박수 (회/분)",False)
+                d_hr=st.number_input("심박수 (회/분)",min_value=40,max_value=200,value=None,step=1,placeholder="안정 시 심박수",help="안정 시 심박수를 입력하세요.",label_visibility="collapsed")
+                field_label("하루 걸음 수",False)
+                d_steps=st.number_input("하루 걸음 수",min_value=0,max_value=50000,value=None,step=500,placeholder="하루 평균 걸음 수",label_visibility="collapsed")
+        with extra_col:
+            st.markdown('<div class="detail-section-title">상세 건강 정보</div>',unsafe_allow_html=True)
             field_label("신체 활동수준 (분/일)")
             d_activity=st.number_input("신체 활동수준 (분/일)",min_value=0,max_value=180,value=None,step=5,placeholder="하루 활동 시간을 입력하세요",label_visibility="collapsed")
             field_label("취침시간 / 기상시간")
@@ -237,27 +253,17 @@ if not st.session_state.analyzed:
             st.caption(f"취침 {d_bedtime.strftime('%H:%M')}  ·  기상 {d_wake_time.strftime('%H:%M')}")
             field_label("스트레스 지수 (1~10)")
             d_stress=st.slider("스트레스 지수 (1~10)",min_value=1,max_value=10,value=5,step=1,label_visibility="collapsed")
-        with extra_col:
-            st.markdown('<div class="detail-section-title">상세 건강 정보</div>',unsafe_allow_html=True)
-            bp_sys_col,bp_dia_col=st.columns(2)
-            with bp_sys_col:
-                field_label("수축기 혈압 (mmHg)",False)
-                d_sys=st.number_input("수축기 혈압 (mmHg)",min_value=70,max_value=250,value=None,step=1,placeholder="예: 120",help="혈압계에 크게 표시되는 위쪽 숫자입니다.",label_visibility="collapsed")
-            with bp_dia_col:
-                field_label("이완기 혈압 (mmHg)",False)
-                d_dia=st.number_input("이완기 혈압 (mmHg)",min_value=40,max_value=150,value=None,step=1,placeholder="예: 80",help="혈압계에 표시되는 아래쪽 숫자입니다.",label_visibility="collapsed")
-            field_label("심박수 (회/분)",False)
-            d_hr=st.number_input("심박수 (회/분)",min_value=40,max_value=200,value=None,step=1,placeholder="안정 시 심박수",help="안정 시 심박수를 입력하세요.",label_visibility="collapsed")
-            field_label("하루 걸음 수",False)
-            d_steps=st.number_input("하루 걸음 수",min_value=0,max_value=50000,value=None,step=500,placeholder="하루 평균 걸음 수",label_visibility="collapsed")
             field_label("하루 카페인 섭취량 (잔)")
             d_caffeine=st.number_input("하루 카페인 섭취량 (잔)",min_value=0.0,max_value=15.0,value=None,step=.5,placeholder="섭취하지 않으면 0",help="커피·에너지 음료·카페인 차를 합산해 입력하세요.",label_visibility="collapsed")
             field_label("하루 휴대폰 사용시간 (시간)")
             d_phone=st.number_input("하루 휴대폰 사용시간 (시간)",min_value=0.0,max_value=24.0,value=None,step=.5,placeholder="사용하지 않으면 0",help="하루 평균 휴대폰 사용시간을 입력하세요.",label_visibility="collapsed")
-            field_label("흡연 여부")
-            d_smoking=st.radio("흡연 여부",["비흡연","흡연"],index=None,horizontal=True,label_visibility="collapsed")
-            field_label("최근 24시간 내 음주 여부")
-            d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],index=None,horizontal=True,label_visibility="collapsed")
+            smoking_col,alcohol_col=st.columns(2)
+            with smoking_col:
+                field_label("흡연 여부")
+                d_smoking=st.radio("흡연 여부",["비흡연","흡연"],index=None,horizontal=True,label_visibility="collapsed")
+            with alcohol_col:
+                field_label("최근 24시간 내 음주 여부")
+                d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],index=None,horizontal=True,label_visibility="collapsed")
             field_label("낮 시간 졸림 정도 (1~10단계)")
             d_daytime_sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",min_value=1,max_value=10,value=5,step=1,help="1 = 전혀 졸리지 않음, 5 = 가끔 졸림, 10 = 매우 심하게 졸림",label_visibility="collapsed")
         if st.form_submit_button("분석 시작하기 →",use_container_width=True):
