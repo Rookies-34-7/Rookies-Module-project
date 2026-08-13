@@ -1,0 +1,25 @@
+﻿Feature,Coefficient
+cat__Occupation_Scientist,0.49379117280706936
+num__Age,0.4104365018021786
+cat__Occupation_Nurse,0.3495886710108411
+cat__Gender_Male,0.33321557880707825
+cat__Occupation_Accountant,0.25145458407289967
+cat__BMI Category_Normal,0.1956839681611616
+cat__BMI Category_Obese,0.12463081758932151
+num__Daily Steps,0.06538787547803898
+num__Physical Activity Level,0.0542252337031279
+cat__Occupation_Software Engineer,0.04312016666573496
+cat__Occupation_Lawyer,0.028764851464210674
+num__Systolic BP,-0.0041223931597899974
+num__Heart Rate,-0.04306289020099386
+cat__Occupation_Teacher,-0.06020813695505231
+cat__Occupation_Manager,-0.06269150269085354
+cat__Occupation_Engineer,-0.08062503578769571
+num__Diastolic BP,-0.19934738332816954
+num__Sleep Duration,-0.2054710600677957
+cat__Occupation_Salesperson,-0.2501730165076159
+cat__Occupation_Doctor,-0.3108339840969524
+cat__BMI Category_Overweight,-0.32031478575048317
+cat__Gender_Female,-0.33321557880707886
+cat__Occupation_Sales Representative,-0.4021877699825857
+num__Stress Level,-0.40570054488474033

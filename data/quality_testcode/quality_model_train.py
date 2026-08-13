@@ -8,10 +8,6 @@ import os
 import sklearn
 sklearn.set_config(display='text')
 
-# 1. 현재 실행 중인 파일(quality_model_train.py)의 절대 경로 탐색
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-pkl_path = os.path.normpath(os.path.join(current_dir, '..', 'quality_data', 'quality_prep.pkl'))
 # 1. 데이터 로드
 df = joblib.load(pkl_path)
 
