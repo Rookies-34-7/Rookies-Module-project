@@ -9,6 +9,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from model_service import predict_quality
+
 load_dotenv(Path(__file__).with_name(".env"))
 
 st.set_page_config(page_title="자니(Zzz-ni) 수면 건강 분석", page_icon="🌙", layout="wide")
@@ -186,7 +188,9 @@ if not st.session_state.analyzed:
                 d_phone=st.number_input("하루 휴대폰 사용시간 (시간)",0.0,24.0,5.0,.5,help="하루 평균 휴대폰 사용시간을 입력하세요.")
                 d_smoking=st.radio("흡연 여부",["비흡연","흡연"],horizontal=True)
                 d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],horizontal=True)
-                d_daytime_sleepiness=st.slider("낮 시간 졸림 정도",1,10,5,help="1은 거의 졸리지 않음, 10은 매우 심하게 졸림을 의미합니다.")
+                # 시간이 아니라 1~10 심각도 척도입니다. 학습 데이터에도 0은 없고 1이 최솟값이라
+                # 범위를 그대로 유지하고, 대신 '시간'으로 오해하지 않도록 문구를 명확히 했습니다.
+                d_daytime_sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",1,10,5,help="시간이 아니라 정도를 뜻합니다. 1 = 전혀 졸리지 않음, 5 = 가끔 졸림, 10 = 매우 심하게 졸림")
             if st.form_submit_button("상세 분석 시작하기 →",use_container_width=True):
                 d_sys,d_dia=parse_bp(d_bp)
                 d_sleep=sleep_duration(d_bedtime,d_wake_time)
@@ -207,8 +211,15 @@ else:
         gauge.update_layout(height=340,margin=dict(l=48,r=48,t=78,b=28),paper_bgcolor="white",font=dict(family="Pretendard",color="#14283a"))
         st.plotly_chart(gauge,use_container_width=True,config={"displayModeBar":False})
         st.markdown('<div class="verdict-label">현재 상태</div>',unsafe_allow_html=True)
-        if insomnia>55: st.markdown('<div class="verdict verdict-bad"><span>⚠️</span><span>주의 필요</span></div>',unsafe_allow_html=True)
-        else: st.markdown('<div class="verdict verdict-good"><span>✅</span><span>양호</span></div>',unsafe_allow_html=True)
+        # quality 모델이 예측하면 그 결과를, 필수 항목이 없거나 모델 로드가 실패하면 기존 규칙을 씁니다.
+        verdict=predict_quality(d)
+        if verdict:
+            st.markdown(f'<div class="verdict verdict-{verdict["tone"]}"><span>{verdict["icon"]}</span><span>{verdict["text"]}</span></div>',unsafe_allow_html=True)
+            st.markdown(f'<div class="verdict-note">수면의 질 예측 모델 · 확신도 {max(verdict["proba"].values()):.0%}</div>',unsafe_allow_html=True)
+        elif insomnia>55:
+            st.markdown('<div class="verdict verdict-bad"><span>⚠️</span><span>주의 필요</span></div>',unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="verdict verdict-good"><span>✅</span><span>양호</span></div>',unsafe_allow_html=True)
     st.markdown('<div style="height:28px"></div>',unsafe_allow_html=True)
     a,b,c=st.columns(3)
     status_metric(a,"수면 시간",f"{d['sleep']}시간","권장보다 짧음" if d['sleep']<7 else "적정 범위","warn" if d['sleep']<7 else "good")
