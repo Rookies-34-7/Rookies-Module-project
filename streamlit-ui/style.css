@@ -47,7 +47,26 @@ h1,h2,h3{letter-spacing:-.045em!important}
 .verdict-label{font-size:1rem;font-weight:700;color:var(--muted);margin:.2rem 0 .55rem}
 .verdict{border-radius:16px;padding:1.15rem 1.2rem;display:flex;align-items:center;justify-content:center;gap:.55rem;font-size:2.4rem;font-weight:800;letter-spacing:-.05em;line-height:1.2}
 .verdict-good{background:#e7f8f0;border:1px solid #b9e6d3;color:#0f7a58}
+.verdict-warn{background:#fff8e1;border:1px solid #f0dca0;color:#8a5a00}
 .verdict-bad{background:#fdecec;border:1px solid #f3c6c6;color:#b53232}
+.verdict-note{font-size:.82rem;color:var(--muted);text-align:center;margin-top:.5rem}
+/* 모델이 없거나 입력이 모자랄 때. 임의 수식으로 채우지 않고 이 안내를 대신 띄웁니다. */
+.pending{background:#f4f7f9;border:1px dashed #c5d3dc;border-radius:16px;padding:1.6rem 1.4rem;text-align:center}
+.pending-title{font-size:1.15rem;font-weight:800;color:var(--ink);margin-bottom:.6rem}
+.pending-body{font-size:.92rem;line-height:1.65;color:var(--muted)}
+.pending-verdict{padding:1.1rem 1.2rem}
+/* 나의 수면 분석 — 모델 3개 결과 요약 */
+.summary-title{font-size:1.45rem;font-weight:800;letter-spacing:-.04em;margin:.6rem 0 1rem}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem}
+.tile{background:#fff;border:1px solid var(--line);border-left-width:5px;border-radius:16px;padding:1.2rem 1.3rem;box-shadow:0 1px 2px rgba(20,40,58,.04)}
+.tile-label{font-size:.95rem;font-weight:600;color:var(--muted)}
+.tile-value{font-size:2.1rem;font-weight:800;letter-spacing:-.045em;line-height:1.2;margin:.35rem 0 .3rem;font-variant-numeric:tabular-nums}
+.tile-unit{font-size:1.1rem;font-weight:700;color:var(--muted)}
+.tile-caption{font-size:.88rem;color:var(--muted)}
+.tile-good{border-left-color:#0f7a58}.tile-good .tile-value{color:#0f7a58}
+.tile-warn{border-left-color:#8a5a00}.tile-warn .tile-value{color:#8a5a00}
+.tile-bad{border-left-color:#b53232}.tile-bad .tile-value{color:#b53232}
+.tile-idle{border-left-color:#c5d3dc}.tile-idle .tile-value{color:var(--muted)}
 
 /* ── 결과: 지표 카드 ────────────────────────────────────
    라벨 → 수치 → 상태 3단 위계. 배지는 margin-top:auto라 카드 높이가 달라도 아래쪽에 정렬됩니다. */

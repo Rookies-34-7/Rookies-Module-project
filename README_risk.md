@@ -1,0 +1,650 @@
+# Rookies-Module-project
+
+
+### 0. 데이터 전처리 (작성자 : 유영택)
+
+Sleep Health and Lifestyle Dataset.csv
+
+- 데이터 칼럼
+    
+    
+    | 컬럼 | 설명 |
+    | --- | --- |
+    | `Patient_ID` | 각 사용자를 구분하기 위한 고유 번호. 예측에는 의미가 없으므로 보통 제거합니다. |
+    | `Age` | 나이. 데이터에서는 18~80세입니다. |
+    | `Gender` | 성별. `Male`, `Female`로 구성되어 있습니다. |
+    | `Occupation` | 직업. Doctor, Engineer, Student, Teacher 등 직업군입니다. |
+    | `Marital_Status` | 결혼 상태. `Married`, `Single`, `Divorced`입니다. |
+    | `Physical_Activity_Minutes` | 하루 신체 활동 시간(분). 운동이나 활동량을 나타내는 변수입니다. |
+    | `Screen_Time_Hours` | 하루 스마트폰·PC·TV 등의 화면 사용 시간(시간)입니다. |
+    | `Daily_Steps` | 하루 걸음 수. 활동량 지표입니다. |
+    | `Water_Intake_Liters` | 하루 물 섭취량(L)입니다. |
+    | `Caffeine_Intake_mg` | 하루 카페인 섭취량(mg). 커피, 에너지음료 등의 카페인 양을 의미합니다. |
+    | `Smoking_Status` | 흡연 여부. `Yes`, `No`입니다. |
+    | `Alcohol_Consumption` | 음주 여부. `Yes`, `No`입니다. |
+    | `Bedtime_Consistency` | 취침 시간이 얼마나 규칙적인지를 나타내는 점수. 데이터에서는 3~9입니다. |
+    | `Sleep_Duration` | 하루 수면 시간(시간). 예: `6.5` = 6시간 30분입니다. |
+    | `Sleep_Quality` | 주관적 수면의 질 점수. 데이터에서는 1~10입니다. |
+    | `Sleep_Efficiency` | 침대에 누워 있던 시간 중 실제로 잠든 시간의 비율. 데이터에서는 약 57~99입니다. |
+    | `Sleep_Latency` | 잠자리에 든 후 실제로 잠드는 데 걸린 시간입니다. |
+    | `Wake_After_Sleep_Onset` | 한번 잠든 이후 깨어 있었던 총 시간. 흔히 WASO라고 부릅니다. |
+    | `Night_Awakenings` | 밤에 잠에서 깬 횟수입니다. |
+    | `Daytime_Sleepiness` | 낮 동안 느끼는 졸림 정도. 데이터에서는 1~10입니다. |
+    | `Weekend_Sleep_Variation` | 평일과 주말 사이 수면 시간 차이를 나타내는 값입니다. |
+    | `BMI` | 체질량지수. 체중과 키를 이용한 비만도 지표입니다. |
+    | `Heart_Rate` | 심박수. 일반적으로 분당 심장 박동수(bpm)를 의미합니다. |
+    | `Systolic_BP` | 수축기 혈압. 예: `120/80`에서 120에 해당합니다. |
+    | `Diastolic_BP` | 이완기 혈압. 예: `120/80`에서 80에 해당합니다. |
+    | `SpO2` | 혈중 산소포화도(%). 수면무호흡증과 관련해 볼 수 있는 지표입니다. |
+    | `HRV` | Heart Rate Variability, 심박변이도. 심장 박동 간격의 변화를 나타내는 지표입니다. |
+    | `Stress_Level` | 스트레스 수준. 원본 데이터에서는 `4`, `7`, `9` 값으로 구성되어 있습니다. |
+    | `Anxiety_Level` | 불안 수준. 1~10 범위입니다. |
+    | `Depression_Score` | 우울 관련 점수. 데이터에서는 0~10입니다. |
+    | `Workload_Score` | 업무 또는 학업 부담 정도를 나타내는 점수. 1~10입니다. |
+    | `Snoring_Frequency` | 코골이 빈도를 나타내는 점수입니다. |
+    | `Respiratory_Disturbance_Index` | 수면 중 호흡 장애 정도를 나타내는 지표입니다. |
+    | `Leg_Movement_Index` | 수면 중 다리 움직임 정도를 나타내는 지표입니다. |
+    | `Sleep_Risk_Index` | 수면 관련 여러 변수를 종합한 것으로 보이는 수면 위험 지수. 정확한 계산식은 CSV에 없습니다. |
+    | `Lifestyle_Risk_Index` | 생활습관 관련 변수들을 종합한 것으로 보이는 위험 지수. 현재 모델의 예측 대상입니다. 정확한 계산식은 CSV에 없습니다. |
+    | `Physiological_Risk_Index` | 생리적 상태 관련 정보를 종합한 것으로 보이는 위험 지수. 정확한 계산식은 CSV에 없습니다. |
+    | `Mental_Health_Risk_Index` | 스트레스, 불안, 우울 등 정신건강 관련 정보를 종합한 것으로 보이는 위험 지수. 정확한 계산식은 CSV에 없습니다. |
+    | `Sleep_Disorder` | 수면 장애 유형을 나타내는 결과 컬럼입니다. |
+- 입력값 요구사항
+    
+    ```markdown
+    기본정보
+     - 나이 / 생년월일
+     - 성별
+     - 몸무게
+     - 키
+    
+    수면 패턴
+     - 취침시간
+     - 기상시간
+    
+    생활습관
+     - 하루 카페인 (몇잔)
+     - 스트레스 레벨 (1~10)
+    
+    추가하면 좋은 항목들
+     - 하루 음주량 (몇잔)
+     - 하루 운동량 (시간/분)
+     - 흡연여부**
+     
+     ----------------
+     상관관계 분석 후 추가사항
+    ```
+    
+
+# 1. 작업 요약
+
+Sleep Health and Lifestyle Dataset을 활용하여 사용자가 쉽게 입력할 수 있는 기본 정보, 수면 패턴 및 생활습관 정보를 기반으로 위험 지수를 예측할 수 있도록 데이터 전처리를 수행하였다.
+
+초기 요구사항을 기반으로 `Lifestyle_Risk_Index`를 예측하는 모델을 구성하였으며, 이후 데이터 상관관계 분석을 통해 `Screen_Time_Hours`를 추가한 개선 버전을 구성하였다.
+
+또한 수면 관련 위험도를 별도로 분석하기 위해 `Sleep_Risk_Index`를 예측하는 전처리 데이터도 추가로 구성하였다.
+
+최종적으로 다음 3가지 버전의 데이터를 사용한다.
+
+| 버전 | 예측 대상 |
+| --- | --- |
+| 요구사항 기반 모델 | `Lifestyle_Risk_Index` |
+| 상관관계 반영 모델 | `Lifestyle_Risk_Index` |
+| Sleep Risk 모델 | `Sleep_Risk_Index` |
+
+---
+
+# 2. 모델별 최종 입력 변수
+
+## 2-1. 요구사항 기반 Lifestyle Risk 모델
+
+- 요구사항 버전 입력값 및 변수 정리
+    
+    사용자가 쉽게 입력할 수 있거나 입력값을 통해 계산할 수 있는 총 9개의 변수를 사용한다.
+    
+    ### 숫자형 변수
+    
+    - `Age` : 나이
+    - `BMI` : 체질량지수
+    - `Sleep_Duration` : 평균 수면 시간
+    - `Caffeine_Intake_mg` : 하루 카페인 섭취량
+    - `Physical_Activity_Minutes` : 하루 신체 활동 시간
+    
+    ### 범주형 변수
+    
+    - `Gender` : 성별
+    - `Stress_Level` : 스트레스 수준
+    - `Alcohol_Consumption` : 음주 여부
+    - `Smoking_Status` : 흡연 여부
+    
+    예측 대상:
+    
+    ```
+    Lifestyle_Risk_Index
+    ```
+    
+    사용 변수:
+    
+    ```
+    features= ["Age","Gender","BMI","Sleep_Duration","Caffeine_Intake_mg","Stress_Level","Alcohol_Consumption","Physical_Activity_Minutes","Smoking_Status"
+    ]
+    ```
+    
+    One-Hot Encoding 후 최종 Feature 수:
+    
+    ```
+    숫자형 5개
+    
+    Gender
+    → Female / Male = 2개
+    
+    Stress_Level
+    → Low / Medium / High = 3개
+    
+    Alcohol_Consumption
+    → No / Yes = 2개
+    
+    Smoking_Status
+    → No / Yes = 2개
+    
+    5 + 2 + 3 + 2 + 2
+    = 총 14개 Feature
+    ```
+    
+
+---
+
+## 2-2. 상관관계 반영 Lifestyle Risk 모델
+
+- 상관관계 반영 버전(`Screen_Time_Hours`)추가
+    
+    기존 요구사항 모델의 변수와 `Lifestyle_Risk_Index` 간의 상관관계를 분석한 결과, 일부 생활습관 변수가 상대적으로 높은 관계를 보였다.
+    
+    주요 상관계수는 다음과 같다.
+    
+    | 변수 | `Lifestyle_Risk_Index`와 상관계수 |
+    | --- | --- |
+    | `Screen_Time_Hours` | 약 +0.759 |
+    | `Caffeine_Intake_mg` | 약 +0.600 |
+    | `Physical_Activity_Minutes` | 약 -0.255 |
+    | `Age` | 약 +0.005 |
+    | `Sleep_Duration` | 약 +0.005 |
+    | `BMI` | 약 +0.002 |
+    
+    특히 `Screen_Time_Hours`가 `Lifestyle_Risk_Index`와 약 `+0.759`의 높은 양의 상관관계를 보여 기존 요구사항 모델에 추가하였다.
+    
+    따라서 상관관계 반영 모델은 총 10개의 입력 변수를 사용한다.
+    
+    ```
+    features_corr= ["Age","Gender","BMI","Sleep_Duration","Screen_Time_Hours","Caffeine_Intake_mg","Stress_Level","Alcohol_Consumption","Physical_Activity_Minutes","Smoking_Status"
+    ]
+    ```
+    
+    ### 숫자형 변수
+    
+    - `Age`
+    - `BMI`
+    - `Sleep_Duration`
+    - `Screen_Time_Hours`
+    - `Caffeine_Intake_mg`
+    - `Physical_Activity_Minutes`
+    
+    ### 범주형 변수
+    
+    - `Gender`
+    - `Stress_Level`
+    - `Alcohol_Consumption`
+    - `Smoking_Status`
+    
+    One-Hot Encoding 후:
+    
+    ```
+    숫자형 6개
+    + 범주형 One-Hot Encoding 9개
+    
+    = 총 15개 Feature
+    ```
+    
+
+---
+
+## 2-3. Sleep Risk 모델
+
+- Sleep Risk index
+    
+    수면 위험도를 별도로 분석하기 위해 `Sleep_Risk_Index`를 Target으로 하는 모델을 추가하였다.
+    
+    숫자형 데이터를 기준으로 `Sleep_Risk_Index`와의 상관관계를 분석한 결과는 다음과 같다.
+    
+    | 변수 | `Sleep_Risk_Index`와 상관계수 |
+    | --- | --- |
+    | `Stress_Level` | +0.970 |
+    | `Sleep_Quality` | -0.966 |
+    | `Daytime_Sleepiness` | +0.879 |
+    | `Sleep_Efficiency` | -0.830 |
+    | `Workload_Score` | +0.775 |
+    | `Anxiety_Level` | +0.774 |
+    | `Sleep_Latency` | +0.744 |
+    | `Sleep_Duration` | -0.714 |
+    | `Depression_Score` | +0.689 |
+    
+    이 중 `Sleep_Quality`은 다른 모델에서 별도로 예측할 예정이기 때문에 입력 변수에서 제외하였다.
+    
+    또한 사용자가 쉽게 입력할 수 있는 정보와 기존 요구사항에서 이미 입력받는 정보를 최대한 재사용하기 위해 다음 5개 변수를 선택하였다.
+    
+    ```
+    sleep_risk_features= ["Stress_Level","Sleep_Duration","Daytime_Sleepiness","Smoking_Status","Alcohol_Consumption"
+    ]
+    ```
+    
+    ### 숫자형 변수
+    
+    - `Sleep_Duration`
+    - `Daytime_Sleepiness`
+    
+    ### 범주형 변수
+    
+    - `Stress_Level`
+    - `Smoking_Status`
+    - `Alcohol_Consumption`
+    
+    예측 대상:
+    
+    ```
+    Sleep_Risk_Index
+    ```
+    
+    `Stress_Level`, `Daytime_Sleepiness`, `Sleep_Duration`은 `Sleep_Risk_Index`와 높은 상관관계를 보였다.
+    
+    반면 흡연과 음주의 경우 `Sleep_Risk_Index`와의 직접적인 관계는 매우 약하게 나타났다.
+    
+    ```
+    Smoking_Status
+    → 약 -0.005
+    
+    Alcohol_Consumption
+    → 약 +0.005
+    ```
+    
+    따라서 흡연과 음주는 높은 상관관계를 근거로 선정한 변수가 아니라 기존 서비스 요구사항에서 입력받는 생활습관 정보를 함께 활용하고 모델 성능을 비교하기 위해 포함하였다.
+    
+    One-Hot Encoding 후 최종 Feature 수는 다음과 같다.
+    
+    ```
+    Sleep_Duration          1개
+    Daytime_Sleepiness      1개
+    
+    Stress_Level
+    → Low / Medium / High   3개
+    
+    Smoking_Status
+    → No / Yes              2개
+    
+    Alcohol_Consumption
+    → No / Yes              2개
+    
+    1 + 1 + 3 + 2 + 2
+    = 총 9개 Feature
+    ```
+    
+
+---
+
+# 3. 사용자 입력
+
+서비스에서는 사용자가 데이터셋의 컬럼명을 직접 입력하지 않고 실제 생활에서 쉽게 답할 수 있는 형태로 정보를 입력받는다.
+
+| 사용자 입력 | 변환되는 데이터 |
+| --- | --- |
+| 생년월일 | `Age` 계산 |
+| 성별 | `Gender` |
+| 키 + 몸무게 | `BMI` 계산 |
+| 취침시간 + 기상시간 | `Sleep_Duration` 계산 |
+| 하루 카페인 섭취량 | `Caffeine_Intake_mg` |
+| 스트레스 정도 | `Stress_Level` |
+| 음주 여부 | `Alcohol_Consumption` |
+| 운동 시간 | `Physical_Activity_Minutes` |
+| 흡연 여부 | `Smoking_Status` |
+| 하루 화면 사용 시간 | `Screen_Time_Hours` |
+| 낮 시간 졸림 정도 | `Daytime_Sleepiness` |
+
+기존 요구사항에서 새롭게 추가되는 입력은 다음 2개이다.
+
+```
+Screen_Time_Hours
+→ Lifestyle Risk 상관관계 분석 결과를 반영하여 추가
+
+Daytime_Sleepiness
+→ Sleep Risk 상관관계 분석 결과를 반영하여 추가
+```
+
+---
+
+# 4. 상관관계 분석
+
+## 4-1. Lifestyle Risk 상관관계 분석
+
+`Lifestyle_Risk_Index`와 숫자형 변수의 상관관계를 분석한 결과 주요 변수는 다음과 같았다.
+
+```
+Screen_Time_Hours             +0.759
+Caffeine_Intake_mg            +0.600
+Physical_Activity_Minutes     -0.255
+```
+
+따라서 화면 사용 시간이 증가할수록 `Lifestyle_Risk_Index`가 증가하는 경향이 나타났으며, 카페인 섭취량 또한 양의 상관관계를 보였다.
+
+반대로 신체 활동 시간은 음의 상관관계를 보여 활동 시간이 증가할수록 `Lifestyle_Risk_Index`가 감소하는 경향을 보였다.
+
+범주형 변수는 그룹별 `Lifestyle_Risk_Index` 평균을 비교하였다.
+
+- 각각 점 도표
+    
+    
+    !Caffeine vs Lifestyle Risk.png
+    
+    !Screen Time vs Lifestyle Risk.png
+    
+    !Physical Activity vs Lifestyle Risk.png
+    
+
+### Gender
+
+```
+Female ≈ 3.971
+Male   ≈ 3.951
+```
+
+### Smoking Status
+
+```
+No  ≈ 3.962
+Yes ≈ 3.956
+```
+
+### Alcohol Consumption
+
+```
+No  ≈ 3.957
+Yes ≈ 3.972
+```
+
+성별, 흡연 여부, 음주 여부에 따른 평균 차이는 매우 작게 나타났다.
+
+따라서 해당 변수들은 `Lifestyle_Risk_Index`와의 직접적인 관계는 크지 않은 것으로 판단하였다.
+
+다만 초기 사용자 요구사항에 포함된 입력 정보이므로 요구사항 기반 모델에서는 유지하였다.
+
+---
+
+## 4-2. Sleep Risk 상관관계 분석
+
+`Sleep_Risk_Index`와 높은 상관관계를 보인 주요 변수는 다음과 같다.
+
+```
+Stress_Level            +0.970
+Sleep_Quality           -0.966
+Daytime_Sleepiness      +0.879
+Sleep_Efficiency        -0.830
+Workload_Score          +0.775
+Anxiety_Level           +0.774
+Sleep_Latency           +0.744
+Sleep_Duration          -0.714
+Depression_Score        +0.689
+```
+
+이 중 사용자가 직접 입력하기 쉽고 기존 서비스 입력값을 활용할 수 있는 변수로:
+
+```
+Stress_Level
+Sleep_Duration
+Daytime_Sleepiness
+```
+
+를 선정하였다.
+
+추가적으로 기존 입력값인:
+
+```
+Smoking_Status
+
+No  → 3.9151
+Yes → 3.8970
+Alcohol_Consumption
+
+No  → 3.9067
+Yes → 3.9226
+```
+
+을 포함하여 모델 성능을 비교할 예정이다.
+
+---
+
+# 5. 데이터 전처리
+
+모든 모델은 전체 데이터 30,000건을 학습 데이터와 테스트 데이터로 분리하였다.
+
+```
+학습 데이터: 24,000건
+테스트 데이터: 6,000건
+```
+
+### 스트레스 데이터 범주화
+
+원본 `Stress_Level`을 다음과 같이 변환하였다.
+
+```
+4 → Low
+7 → Medium
+9 → High
+```
+
+### 이상치 처리
+
+`Lifestyle_Risk_Index`를 예측하는 모델에서는 다음 두 변수에 IQR 방식으로 이상치를 처리하였다.
+
+```
+Caffeine_Intake_mg
+Physical_Activity_Minutes
+```
+
+학습 데이터에서 IQR 기준을 계산한 후 해당 범위를 벗어난 값은 삭제하지 않고 경계값으로 조정하였다.
+
+현재 적용 기준:
+
+```
+Caffeine_Intake_mg
+→ 0 ~ 395mg
+
+Physical_Activity_Minutes
+→ 0 ~ 104.4분
+```
+
+### 숫자형 데이터 표준화
+
+숫자형 데이터에는 `StandardScaler`를 적용한다.
+
+학습 데이터에는:
+
+```
+fit_transform()
+```
+
+테스트 데이터에는:
+
+```
+transform()
+```
+
+을 적용하여 학습 데이터에서 계산된 기준을 테스트 데이터에도 동일하게 사용한다.
+
+### 범주형 데이터 인코딩
+
+범주형 데이터에는 `OneHotEncoder`를 적용한다.
+
+```
+OneHotEncoder(handle_unknown="ignore",sparse_output=False
+)
+```
+
+이를 통해 문자형 데이터를 머신러닝 모델에서 사용할 수 있는 숫자 형태로 변환한다.
+
+---
+
+# 6. 전처리 결과
+
+| 모델 | Target | 원본 입력 변수 | 전처리 후 Feature |
+| --- | --- | --- | --- |
+| 요구사항 기반 | `Lifestyle_Risk_Index` | 9개 | 14개 |
+| 상관관계 반영 | `Lifestyle_Risk_Index` | 10개 | 15개 |
+| Sleep Risk | `Sleep_Risk_Index` | 5개 | 9개 |
+
+각 모델의 데이터 크기는 동일하다.
+
+```
+X_train : 24,000건
+X_test  : 6,000건
+```
+
+### 요구사항 기반 모델
+
+- 
+    
+    ```
+    입력 변수: 9개
+    최종 Feature: 14개
+    Target: Lifestyle_Risk_Index
+    ```
+    
+    최종 산출물:
+    
+    sleep_preprocessing_yt_요구사항ver.pkl
+    
+
+### 상관관계 반영 모델
+
+- 
+    
+    ```
+    입력 변수: 10개
+    Screen_Time_Hours 추가
+    최종 Feature: 15개
+    Target: Lifestyle_Risk_Index
+    ```
+    
+    최종 산출물:
+    
+    sleep_preprocessing_yt_상관관계 반영ver.pkl
+    
+
+### Sleep Risk 모델
+
+- 
+    
+    ```
+    입력 변수: 5개
+    
+    Stress_Level
+    Sleep_Duration
+    Daytime_Sleepiness
+    Smoking_Status
+    Alcohol_Consumption
+    
+    최종 Feature: 9개
+    Target: Sleep_Risk_Index
+    ```
+    
+    최종 산출물:
+    
+    sleep_preprocessing_yt_sleep_risk_반영ver.pkl
+
+---------------------------------------------------------------------------------------------------------------------
+
+# Lifestyle Risk Prediction Model (작성자 : 김규륭)
+
+생활습관 데이터를 기반으로 `Lifestyle_Risk_Index`를 예측하는 회귀 모델입니다.
+
+## 1. 모델 입력값
+
+- Age
+- Gender
+- BMI
+- Sleep_Duration
+- Screen_Time_Hours
+- Caffeine_Intake_mg
+- Stress_Level
+- Alcohol_Consumption
+- Physical_Activity_Minutes
+- Smoking_Status
+
+## 2. Target
+
+`Lifestyle_Risk_Index`
+
+생활습관 관련 정보를 종합한 위험 지수를 예측합니다.
+
+## 3. 모델 비교
+
+| Model | Test MAE | Test RMSE | Test R² |
+| --- | ---: | ---: | ---: |
+| Random Forest | 0.0408 | 0.0665 | 0.9974 |
+| Linear Regression | 0.0138 | 0.0272 | 0.9996 |
+| Gradient Boosting | 0.0472 | 0.0615 | 0.9978 |
+
+세 모델을 동일한 데이터로 비교한 결과 Linear Regression이
+가장 낮은 MAE와 RMSE, 가장 높은 R²를 기록하여 최종 모델로 선정했습니다.
+
+## 4. 최종 모델
+
+- Model: Linear Regression
+- MAE: 0.0138
+- RMSE: 0.0272
+- R²: 0.9996
+
+
+## 5. 전처리
+
+전처리 담당자가 생성한 전처리 데이터를 사용했습니다.
+
+`Sleep_preprocessing_yt_상관관계 반영ver.pkl`
+
+해당 파일에는 다음 전처리가 적용된 Train/Test 데이터와 전처리 객체가 저장되어 있습니다.
+
+- Train/Test 분리
+- 이상치 처리
+- 숫자형 Feature 표준화
+- 범주형 Feature One-Hot Encoding
+
+### 전처리 후 데이터
+
+- X_train: (24000, 15)
+- X_test: (6000, 15)
+- y_train: (24000,)
+- y_test: (6000,)
+
+Target은 `Lifestyle_Risk_Index`이며, 원본 10개 입력 Feature는 전처리 후 15개 Feature로 변환됩니다.
+
+최종 모델 파일 `lifestyle_risk_model.pkl`에는 새로운 사용자 입력에도 동일한 전처리를 적용할 수 있도록 다음 객체를 함께 저장했습니다.
+
+- Linear Regression Model
+- StandardScaler
+- OneHotEncoder
+- Numeric Feature 목록
+- Categorical Feature 목록
+- 이상치 처리 기준
+
+## 6. 파일 구성
+
+| File | Description |
+| --- | --- |
+| `lifestyle_risk_training.ipynb` | 모델 학습, 비교 및 최종 모델 선정 과정 |
+| `lifestyle_risk_model.pkl` | 최종 Linear Regression 모델 및 전처리 객체 |
+| `lifestyle_risk_test.py` | 저장된 모델을 이용한 예측 테스트 |
+
+## 7. 모델 테스트
+
+`lifestyle_risk_test.py`를 실행하여 저장된 모델의 예측 동작을 확인할 수 있습니다.
+
+테스트 과정:
+
+사용자 입력 → 이상치 처리 → 표준화 → One-Hot Encoding → 모델 예측 → Lifestyle_Risk_Index 출력
