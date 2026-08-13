@@ -9,7 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from model_service import predict_quality
+from model_service import predict_efficiency, predict_quality
 
 load_dotenv(Path(__file__).with_name(".env"))
 
@@ -204,8 +204,18 @@ else:
         st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
         st.markdown('<div class="notice">이 결과는 의료 진단이 아닌 건강 관리 참고용입니다. 증상이 지속되면 전문의와 상담하세요.</div>',unsafe_allow_html=True)
     with right:
-        score_color="#d94b4b" if quality<=33 else ("#e58a1f" if quality<=66 else "#15966f")
-        gauge=go.Figure(go.Indicator(mode="gauge+number",value=quality,title={"text":"수면 건강 점수","font":{"size":20,"color":"#14283a"}},number={"suffix":"점","font":{"color":score_color,"size":46}},gauge={"axis":{"range":[0,100],"tickvals":[0,25,50,75,100],"tickfont":{"size":13,"color":"#5a6d7a"}},"bar":{"color":score_color,"thickness":.68},"bgcolor":"#eef2f3","borderwidth":0,"steps":[{"range":[0,33],"color":"#f9dada"},{"range":[33,66],"color":"#fde9c9"},{"range":[66,100],"color":"#d9f1e7"}]}))
+        # 효율 모델이 있으면 예측 효율(%)을, 없으면 기존 점수를 게이지에 씁니다.
+        # 효율은 학습 범위가 57~99라 0부터 그리면 바늘이 항상 오른쪽에 몰립니다.
+        efficiency=predict_efficiency(d)
+        if efficiency:
+            g=efficiency["gauge"]
+            gauge_value,gauge_title,gauge_suffix=efficiency["value"],"수면 효율","%"
+            axis_min,axis_max,warn,good=g["min"],g["max"],g["warn"],g["good"]
+        else:
+            gauge_value,gauge_title,gauge_suffix=quality,"수면 건강 점수","점"
+            axis_min,axis_max,warn,good=0,100,33,66
+        score_color="#d94b4b" if gauge_value<warn else ("#e58a1f" if gauge_value<good else "#15966f")
+        gauge=go.Figure(go.Indicator(mode="gauge+number",value=gauge_value,title={"text":gauge_title,"font":{"size":20,"color":"#14283a"}},number={"suffix":gauge_suffix,"font":{"color":score_color,"size":46}},gauge={"axis":{"range":[axis_min,axis_max],"tickfont":{"size":13,"color":"#5a6d7a"}},"bar":{"color":score_color,"thickness":.68},"bgcolor":"#eef2f3","borderwidth":0,"steps":[{"range":[axis_min,warn],"color":"#f9dada"},{"range":[warn,good],"color":"#fde9c9"},{"range":[good,axis_max],"color":"#d9f1e7"}]}))
         gauge.update_layout(height=340,margin=dict(l=48,r=48,t=78,b=28),paper_bgcolor="white",font=dict(family="Pretendard",color="#14283a"))
         st.plotly_chart(gauge,use_container_width=True,config={"displayModeBar":False})
         st.markdown('<div class="verdict-label">현재 상태</div>',unsafe_allow_html=True)

@@ -30,6 +30,7 @@ MODEL_CANDIDATES = {
     "efficiency": [
         PROJECT_ROOT / "model" / "efficiency_model.pkl",
         PROJECT_ROOT / "model" / "sleep_efficiency_model.pkl",
+        PROJECT_ROOT / "data" / "risk_data" / "efficiency_sleep_efficiency_model.pkl",
     ],
     # 수면 장애 분류 -> 수면 장애 위험도 막대
     "risk": [
