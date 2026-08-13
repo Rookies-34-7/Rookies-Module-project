@@ -2,8 +2,7 @@ streamlit>=1.39,<2
 plotly>=5.24,<7
 openai>=1.0,<3
 python-dotenv>=1.0,<2
-# 모델 추론용. pkl이 sklearn 1.9.0에서 저장되어 있어 그 이상이 필요하며,
-# scikit-learn 1.9는 Python 3.11 이상을 요구합니다.
+# pkl이 sklearn 1.9.0 저장본이라 그 이상 필요. 1.9는 Python 3.11+ 요구.
 scikit-learn>=1.9,<2
 joblib>=1.4,<2
 pandas>=2.0,<4

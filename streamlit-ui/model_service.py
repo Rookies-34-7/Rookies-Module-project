@@ -1,25 +1,7 @@
-"""학습된 모델 추론을 화면 코드와 분리해 담당합니다.
+"""모델 추론을 화면 코드와 분리해 담당합니다.
 
-설계 원칙: **모델 파일만 갈아끼우면 바로 동작해야 한다.**
-그래서 필요한 입력 컬럼을 코드에 박지 않고 전처리기에서 직접 읽어옵니다.
-새 모델의 피처가 늘거나 줄어도, 아래 FIELD_SOURCES에 그 항목이 있으면 그대로 돌아갑니다.
-
-── 새 모델 받았을 때 하는 일 ──────────────────────────────
-  1. pkl을 model/ 폴더에 넣습니다. 파일명은 아래 MODEL_CANDIDATES 참고.
-  2. 앱을 재시작합니다. (@st.cache_resource라 재시작 전엔 옛 모델이 남습니다)
-  3. 잘 붙었는지 보려면:  python model_service.py
-     -> 어떤 컬럼을 요구하는지, 폼에서 못 채우는 게 있는지 출력합니다.
-
-지원하는 pkl 형식
-  * {"model":…, "preprocessor":…, "labels":…}   <- 현재 quality 모델
-  * {"model":…, "scaler":…, "encoder":…, …}     <- 현재 risk 모델
-  * 전처리기 없는 추정기 단독
-
-현재 연결
-  * quality : 수면의 질 3분류 -> 양호/주의/위험
-추가 예정
-  * 효율 모델(Sleep_Efficiency) -> 수면 건강 점수 게이지
-  * 신규 risk 모델(수면 장애)    -> 수면 장애 위험도 막대
+입력 컬럼을 코드에 박지 않고 전처리기에서 읽어오므로, pkl을 model/ 에 넣고 앱을
+재시작하면 바로 반영됩니다. 붙었는지 확인은 `python model_service.py`.
 """
 from pathlib import Path
 
@@ -35,8 +17,7 @@ except Exception:                      # 터미널에서 직접 실행할 때(�
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# 앞에 있는 경로부터 찾습니다. 팀원이 준 파일을 model/ 에 넣으면 그쪽이 우선합니다.
-# 세 모델 모두 교체 예정이라, 파일이 없으면 조용히 None을 돌려 화면이 기존 로직으로 동작합니다.
+# 앞 경로부터 탐색. 파일이 없으면 None을 돌려 화면이 기존 로직으로 폴백합니다.
 MODEL_CANDIDATES = {
     # 수면의 질 3분류 -> 양호/주의/위험
     "quality": [
@@ -58,8 +39,7 @@ MODEL_CANDIDATES = {
     ],
 }
 
-# 수면 효율 게이지 눈금. 임상 기준 85% 이상 정상, 75% 미만 주의.
-# 학습 데이터 실측 범위가 57~99라 0부터 그리면 바늘이 항상 오른쪽에 몰립니다.
+# 게이지 눈금. 임상 기준 85%↑ 정상, 학습 범위가 57~99라 0부터 그리면 변별이 안 됩니다.
 EFFICIENCY_GAUGE = {"min": 55, "max": 100, "warn": 75, "good": 85}
 QUALITY_CSV = PROJECT_ROOT / "data" / "quality_data" / "Sleep_health_and_lifestyle_dataset.csv"
 
@@ -89,8 +69,7 @@ def _norm(name):
     return "".join(ch for ch in str(name).lower() if ch.isalnum())
 
 
-# 모델이 요구하는 컬럼(정규화된 이름) -> 폼 dict에서 값을 꺼내는 함수.
-# 새 모델이 다른 피처를 쓰더라도 여기에 있으면 코드 수정 없이 채워집니다.
+# 모델 컬럼(정규화된 이름) -> 폼 값. 새 모델의 피처도 여기 있으면 코드 수정 없이 채워집니다.
 FIELD_SOURCES = {
     "age":                     lambda d: d.get("age"),
     "gender":                  lambda d: d.get("gender"),
@@ -111,8 +90,7 @@ FIELD_SOURCES = {
     "alcoholconsumption":      lambda d: {"음주함": "Yes", "음주 안 함": "No"}.get(d.get("recent_alcohol")),
 }
 
-# 전처리기가 학습한 BMI 범주는 Normal/Obese/Overweight 3종뿐입니다. 학습에 없는 값을
-# 그대로 넣으면 원핫이 전부 0인, 한 번도 본 적 없는 패턴이 되므로 Normal로 모읍니다.
+# 학습에 없는 범주를 넣으면 원핫이 전부 0이 되므로 학습된 값으로 모읍니다.
 CATEGORY_ALIAS = {
     "bmicategory": {"Underweight": "Normal", "Normal Weight": "Normal"},
 }
@@ -139,7 +117,7 @@ def load_bundle(kind="quality"):
         if isinstance(obj, dict):
             estimator = obj.get("model")
             bundle["pre"] = obj.get("preprocessor")
-            # scaler/encoder를 따로 담은 형식(현 risk 모델)도 지원합니다.
+            # scaler/encoder 분리형도 지원
             bundle["scaler"] = obj.get("scaler")
             bundle["encoder"] = obj.get("encoder")
             bundle["numeric"] = list(obj.get("numeric_features", []))
@@ -156,11 +134,7 @@ def load_bundle(kind="quality"):
 
 
 def required_columns(bundle):
-    """모델이 요구하는 입력 컬럼을 번들에서 뽑아냅니다.
-
-    ColumnTransformer면 feature_names_in_에서, scaler+encoder 분리형이면
-    numeric_features/categorical_features 목록에서 가져옵니다.
-    """
+    """모델이 요구하는 입력 컬럼을 번들에서 뽑아냅니다."""
     if bundle.get("numeric") or bundle.get("categorical"):
         return list(bundle["numeric"]) + list(bundle["categorical"])
     for holder in (bundle.get("pre"), bundle.get("estimator")):
@@ -199,10 +173,8 @@ def _transform(bundle, frame):
     return frame
 
 
-# 스트레스는 모델마다 표현이 다릅니다. quality는 숫자(학습 분포 3~8),
-# risk는 Low/Medium/High 범주(원본 데이터에 4/7/9 세 값만 존재).
-# 폼은 1~10 슬라이더를 유지하고, 범주를 요구하는 모델에만 아래 기준으로 변환합니다.
-# ※ 경계값은 팀 확인이 필요합니다.
+# quality는 숫자, risk는 범주를 요구해 폼(1~10)을 유지하고 필요한 모델에만 변환합니다.
+# ※ 경계값은 팀 확인 필요.
 STRESS_BANDS = ((4, "Low"), (7, "Medium"), (10, "High"))
 
 
@@ -214,11 +186,7 @@ def _to_stress_band(value):
 
 
 def _build_row(d, columns, choices=None):
-    """폼 dict에서 모델이 요구하는 컬럼만 채웁니다. 못 채운 건 따로 알려줍니다.
-
-    choices를 주면, 범주형 컬럼에 숫자가 들어가는 경우를 잡아 변환합니다.
-    (예: 스트레스를 1~10으로 받았는데 모델은 Low/Medium/High를 기대)
-    """
+    """폼 dict에서 모델이 요구하는 컬럼만 채우고, 못 채운 컬럼을 함께 돌려줍니다."""
     choices = choices or {}
     row, missing = {}, []
     for col in columns:
@@ -232,7 +200,7 @@ def _build_row(d, columns, choices=None):
             if _norm(col) == "stresslevel":
                 value = _to_stress_band(value)
             else:
-                # 숫자를 그대로 넣으면 원핫이 전부 0이 되어 조용히 왜곡됩니다.
+                # 숫자를 넣으면 원핫이 전부 0이 되어 조용히 왜곡됨
                 value = None
                 missing.append(col)
 
@@ -242,12 +210,7 @@ def _build_row(d, columns, choices=None):
 
 
 def predict_quality(d):
-    """폼 입력으로 수면의 질을 예측합니다.
-
-    필수 항목이 비었으면 None을 돌려 호출부가 기존 규칙으로 폴백하게 합니다.
-    빈 값을 평균으로 채우지 않는 이유: 랜덤포레스트는 평균값이 '중립'이 아니라
-    특정 분기 경로로 조용히 밀려서 근거 없는 판정이 나옵니다.
-    """
+    """수면의 질을 예측합니다. 필수 항목이 비면 None (평균 대치는 트리에서 중립이 아님)."""
     bundle = load_bundle("quality")
     if bundle is None:
         return None
@@ -279,11 +242,7 @@ def predict_quality(d):
 
 
 def _predict_frame(bundle, d):
-    """폼 dict를 모델 입력으로 바꿔 전처리까지 끝낸 행렬과 주변화 가중치를 돌려줍니다.
-
-    predict_quality / predict_efficiency / predict_risk가 공통으로 씁니다.
-    채울 수 없는 컬럼이 있으면 (None, None)을 돌려 호출부가 폴백하게 합니다.
-    """
+    """전처리까지 끝낸 행렬과 주변화 가중치를 돌려줍니다. 못 채우면 (None, None)."""
     columns = required_columns(bundle)
     if not columns:
         return None, None
@@ -291,7 +250,7 @@ def _predict_frame(bundle, d):
     choices = _categorical_choices(bundle)
     row, missing = _build_row(d, columns, choices)
 
-    # 폼에서 아예 받지 않는 범주형(예: 직업)은 학습된 값 전체로 주변화합니다.
+    # 폼에서 받지 않는 범주형은 학습된 값 전체로 주변화
     marginal_col = next((c for c in missing if c in choices), None)
     if [c for c in missing if c != marginal_col]:
         return None, None
@@ -312,10 +271,7 @@ def _predict_frame(bundle, d):
 
 
 def predict_efficiency(d):
-    """수면 효율(%)을 예측합니다. 모델이 없으면 None.
-
-    회귀 모델이라 predict()를 그대로 쓰고, 게이지 구간은 EFFICIENCY_GAUGE를 따릅니다.
-    """
+    """수면 효율(%)을 예측합니다. 모델이 없으면 None."""
     bundle = load_bundle("efficiency")
     if bundle is None:
         return None
@@ -334,11 +290,7 @@ def predict_efficiency(d):
 
 
 def predict_risk(d):
-    """수면 장애별 확률(%)을 예측합니다. 모델이 없으면 None.
-
-    분류 모델의 predict_proba를 그대로 막대그래프에 씁니다.
-    반환 예: {"불면증": 32.1, "수면무호흡증": 21.4, ...}
-    """
+    """수면 장애별 확률(%)을 예측합니다. 모델이 없으면 None."""
     bundle = load_bundle("risk")
     if bundle is None:
         return None
@@ -378,11 +330,7 @@ SAMPLE_INPUT = {
 
 
 def diagnose():
-    """`python model_service.py`로 실행하면 세 모델이 잘 붙었는지 점검합니다.
-
-    새 pkl을 model/ 에 넣은 뒤 이걸 먼저 돌려보면, 폼에서 못 채우는 컬럼이 있는지
-    앱을 띄우기 전에 알 수 있습니다.
-    """
+    """세 모델의 로드 상태와 폼에서 못 채우는 컬럼을 점검합니다."""
     for kind, predict in (("quality", predict_quality),
                           ("efficiency", predict_efficiency),
                           ("risk", predict_risk)):

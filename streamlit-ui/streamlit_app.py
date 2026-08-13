@@ -67,13 +67,6 @@ def bmi_category(bmi):
     if bmi < 30: return "Overweight"
     return "Obese"
 
-def parse_bp(value):
-    try:
-        sys,dia=value.replace(" ","").split("/")
-        return int(sys),int(dia)
-    except (ValueError,AttributeError):
-        return 120,80
-
 def sleep_duration(bedtime,wake_time):
     base=datetime(2000,1,1)
     start=datetime.combine(base.date(),bedtime)
@@ -181,18 +174,23 @@ if not st.session_state.analyzed:
                 d_stress=st.slider("스트레스 지수",1,10,5)
             with extra_col:
                 st.markdown('<div class="detail-section-title">상세 건강 정보</div>',unsafe_allow_html=True)
-                d_bp=st.text_input("혈압",value="120/80",help="수축기/이완기 형식으로 입력하세요. 예: 120/80")
-                d_hr=st.number_input("심박수 (회/분)",40,140,70)
-                d_steps=st.number_input("하루 걸음 수",0,30000,7000,500)
+                # 자유 텍스트였을 때 파싱 실패가 조용히 120/80으로 대체돼 숫자 입력으로 교체
+                bp_sys_col,bp_dia_col=st.columns(2)
+                d_sys=bp_sys_col.number_input("수축기 혈압 (mmHg)",70,250,120,help="혈압계에 크게 표시되는 위쪽 숫자입니다. 예: 120/80의 120")
+                d_dia=bp_dia_col.number_input("이완기 혈압 (mmHg)",40,150,80,help="아래쪽 숫자입니다. 예: 120/80의 80")
+                d_hr=st.number_input("심박수 (회/분)",40,200,70,help="안정 시 심박수를 입력하세요.")
+                d_steps=st.number_input("하루 걸음 수",0,50000,7000,500)
                 d_caffeine=st.number_input("하루 카페인 섭취량 (잔)",0.0,15.0,1.0,.5,help="커피·에너지 음료·카페인 차를 합산해 입력하세요.")
                 d_phone=st.number_input("하루 휴대폰 사용시간 (시간)",0.0,24.0,5.0,.5,help="하루 평균 휴대폰 사용시간을 입력하세요.")
                 d_smoking=st.radio("흡연 여부",["비흡연","흡연"],horizontal=True)
                 d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],horizontal=True)
-                # 시간이 아니라 1~10 심각도 척도입니다. 학습 데이터에도 0은 없고 1이 최솟값이라
-                # 범위를 그대로 유지하고, 대신 '시간'으로 오해하지 않도록 문구를 명확히 했습니다.
+                # 시간이 아닌 1~10 척도. 학습 데이터에도 0은 없어 범위 유지, 문구만 명확화
                 d_daytime_sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",1,10,5,help="시간이 아니라 정도를 뜻합니다. 1 = 전혀 졸리지 않음, 5 = 가끔 졸림, 10 = 매우 심하게 졸림")
             if st.form_submit_button("상세 분석 시작하기 →",use_container_width=True):
-                d_sys,d_dia=parse_bp(d_bp)
+                # 뒤바꿔 입력한 경우는 각 항목의 범위만으로 걸러지지 않음
+                if d_sys<=d_dia:
+                    st.error(f"혈압을 다시 확인해 주세요. 수축기({d_sys})는 이완기({d_dia})보다 높아야 합니다. 두 값을 바꿔 입력하신 것 같습니다.")
+                    st.stop()
                 d_sleep=sleep_duration(d_bedtime,d_wake_time)
                 save_and_analyze({"mode":"상세 폼","gender":d_gender,"age":d_age,"occupation":None,"height":d_height,"weight":d_weight,"bedtime":d_bedtime.strftime("%H:%M"),"wake_time":d_wake_time.strftime("%H:%M"),"sleep":d_sleep,"quality":None,"activity":d_activity,"stress":d_stress,"bmi":d_bmi,"sys":d_sys,"dia":d_dia,"heart_rate":d_hr,"daily_steps":d_steps,"sleep_disorder":"None","caffeine":d_caffeine,"recent_alcohol":d_recent_alcohol,"phone_hours":d_phone,"daytime_sleepiness":d_daytime_sleepiness,"smoking":d_smoking})
 else:
@@ -211,7 +209,7 @@ else:
         gauge.update_layout(height=340,margin=dict(l=48,r=48,t=78,b=28),paper_bgcolor="white",font=dict(family="Pretendard",color="#14283a"))
         st.plotly_chart(gauge,use_container_width=True,config={"displayModeBar":False})
         st.markdown('<div class="verdict-label">현재 상태</div>',unsafe_allow_html=True)
-        # quality 모델이 예측하면 그 결과를, 필수 항목이 없거나 모델 로드가 실패하면 기존 규칙을 씁니다.
+        # 모델 예측이 없으면(필수 항목 누락·로드 실패) 기존 규칙으로 폴백
         verdict=predict_quality(d)
         if verdict:
             st.markdown(f'<div class="verdict verdict-{verdict["tone"]}"><span>{verdict["icon"]}</span><span>{verdict["text"]}</span></div>',unsafe_allow_html=True)
