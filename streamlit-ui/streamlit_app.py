@@ -9,7 +9,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from model_service import predict_efficiency, predict_quality
+from model_service import (lifestyle_profile, predict_efficiency, predict_lifestyle_risk,
+                           predict_quality)
 
 load_dotenv(Path(__file__).with_name(".env"))
 
@@ -87,14 +88,6 @@ PERSONALIZED_TIPS=[
     "잠들기 전 걱정되는 일을 메모해 두고 생각을 잠시 내려놓는 습관을 만들어 보세요.",
 ]
 
-def calculate(d):
-    caffeine_risk=max(0,d.get("caffeine",0)-2)*2
-    alcohol_risk=5 if d.get("recent_alcohol")=="음주함" else 0
-    smoking_risk=5 if d.get("smoking")=="흡연" else 0
-    risk=round(18+(7-d["sleep"])*9+d["stress"]*3+max(0,d["bmi"]-25)*2+(10 if d["sys"]>130 else 0)-d["activity"]*.08+caffeine_risk+alcohol_risk+smoking_risk)
-    risk=max(12,min(92,risk)); apnea=min(88,round(risk*.72+(12 if d["bmi"]>25 else 0))); shortage=max(5,min(95,round((8-d["sleep"])*18+20)))
-    return risk,apnea,shortage,max(25,100-risk)
-
 def save_and_analyze(data):
     st.session_state.data=data
     st.session_state.personalized_tip=random.choice(PERSONALIZED_TIPS)
@@ -129,6 +122,21 @@ def ask_sleep_coach(prompt):
     st.session_state.messages.append({"role":"assistant","content":answer})
     return answer
 
+def lifestyle_radar(d):
+    """생활습관 프로필 레이더. 축마다 방향을 맞춰 바깥쪽일수록 양호합니다."""
+    profile=lifestyle_profile(d)
+    if not profile: return None
+    axes=[p["axis"] for p in profile]+[profile[0]["axis"]]
+    scores=[p["score"] for p in profile]+[profile[0]["score"]]
+    fig=go.Figure(go.Scatterpolar(r=scores,theta=axes,fill="toself",mode="lines+markers",
+        line=dict(color="#2265e5",width=2),fillcolor="rgba(34,101,229,.18)",marker=dict(size=7)))
+    fig.update_layout(title=dict(text="생활습관 프로필 · 바깥쪽일수록 양호",x=.045,xanchor="left",font=dict(size=20)),
+        height=380,margin=dict(l=60,r=60,t=76,b=40),showlegend=False,
+        polar=dict(bgcolor="white",radialaxis=dict(range=[0,100],tickvals=[25,50,75,100],ticksuffix="",tickfont=dict(size=11,color="#5a6d7a"),gridcolor="#e6edf1"),
+                   angularaxis=dict(tickfont=dict(size=14,color="#14283a"),gridcolor="#e6edf1")),
+        paper_bgcolor="white",font=dict(family="Pretendard",color="#14283a"))
+    return fig
+
 def status_metric(container,label,value,status,tone="good"):
     container.markdown(f'<div class="card"><div class="card-label">{label}</div><div class="card-value">{value}</div><span class="pill pill-{tone}">{status}</span></div>',unsafe_allow_html=True)
 
@@ -151,10 +159,19 @@ if not st.session_state.analyzed:
             bedtime=c3.time_input("취침시간",value=time(23,30))
             wake_time=c4.time_input("기상시간",value=time(6,30))
             activity=st.number_input("신체 활동수준 (분/일)",0,240,45,5)
+            # 아래 항목은 효율 모델의 필수 입력입니다. 예전엔 코드에 값을 박아 넣었는데,
+            # 사용자가 주지 않은 값을 지어내는 셈이라 직접 받도록 바꿨습니다.
+            c5,c6=st.columns(2)
+            phone=c5.number_input("하루 휴대폰 사용시간 (시간)",0.0,24.0,5.0,.5,key="simple_phone")
+            caffeine=c6.number_input("하루 카페인 섭취량 (잔)",0.0,15.0,1.0,.5,key="simple_caffeine")
             stress=st.slider("스트레스 지수",1,10,6)
+            sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",1,10,5,key="simple_sleepiness",help="시간이 아니라 정도를 뜻합니다. 1 = 전혀 졸리지 않음, 10 = 매우 심하게 졸림")
+            c7,c8=st.columns(2)
+            smoking=c7.radio("흡연 여부",["비흡연","흡연"],horizontal=True,key="simple_smoking")
+            recent_alcohol=c8.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],horizontal=True,key="simple_alcohol")
             if st.form_submit_button("간단 분석 시작하기 →",use_container_width=True):
                 sleep=sleep_duration(bedtime,wake_time)
-                save_and_analyze({"mode":"간단 측정","gender":gender,"age":age,"bedtime":bedtime.strftime("%H:%M"),"wake_time":wake_time.strftime("%H:%M"),"sleep":sleep,"quality":None,"activity":activity,"stress":stress,"bmi":bmi,"sys":120,"dia":80,"heart_rate":None,"daily_steps":None,"occupation":None,"sleep_disorder":"None","caffeine":0,"recent_alcohol":"음주 안 함","smoking":"비흡연"})
+                save_and_analyze({"mode":"간단 측정","gender":gender,"age":age,"bedtime":bedtime.strftime("%H:%M"),"wake_time":wake_time.strftime("%H:%M"),"sleep":sleep,"quality":None,"activity":activity,"stress":stress,"bmi":bmi,"sys":120,"dia":80,"heart_rate":None,"daily_steps":None,"occupation":None,"sleep_disorder":"None","caffeine":caffeine,"recent_alcohol":recent_alcohol,"smoking":smoking,"phone_hours":phone,"daytime_sleepiness":sleepiness})
     with detail_tab:
         st.markdown('<div class="form-title">상세 측정</div>',unsafe_allow_html=True)
         with st.form("detail_form"):
@@ -195,39 +212,58 @@ if not st.session_state.analyzed:
                 save_and_analyze({"mode":"상세 폼","gender":d_gender,"age":d_age,"occupation":None,"height":d_height,"weight":d_weight,"bedtime":d_bedtime.strftime("%H:%M"),"wake_time":d_wake_time.strftime("%H:%M"),"sleep":d_sleep,"quality":None,"activity":d_activity,"stress":d_stress,"bmi":d_bmi,"sys":d_sys,"dia":d_dia,"heart_rate":d_hr,"daily_steps":d_steps,"sleep_disorder":"None","caffeine":d_caffeine,"recent_alcohol":d_recent_alcohol,"phone_hours":d_phone,"daytime_sleepiness":d_daytime_sleepiness,"smoking":d_smoking})
 else:
     d=st.session_state.data
-    insomnia,apnea,shortage,quality=calculate(d)
+    # 화면에 나가는 진단값은 전부 모델에서만 옵니다. 모델이 없거나 입력이 모자라면
+    # 임의 수식으로 채우지 않고 안내를 띄웁니다.
+    efficiency=predict_efficiency(d)
+    verdict=predict_quality(d)
+    lifestyle=predict_lifestyle_risk(d)
     st.markdown(f'<div class="eyebrow">YOUR SLEEP REPORT · {d["mode"]}</div><div class="hero">수면 건강 분석이<br><span class="blue">완료되었어요.</span></div><div class="sub">입력한 생활 습관을 기반으로 현재 수면 상태와 주요 위험 요인을 분석했습니다.</div>',unsafe_allow_html=True)
+
+    # 나의 수면 분석 — 모델 3개의 결과를 한 줄로 요약합니다.
+    def summary_tile(label,value,tone,caption):
+        return f'<div class="tile tile-{tone}"><div class="tile-label">{label}</div><div class="tile-value">{value}</div><div class="tile-caption">{caption}</div></div>'
+    tiles=[]
+    if verdict and verdict["score"] is not None:
+        tiles.append(summary_tile("수면의 질",f'{verdict["score"]} <span class="tile-unit">/ 10</span>',verdict["tone"],verdict["text"]))
+    else:
+        tiles.append(summary_tile("수면의 질","—","idle","심박수·혈압·걸음 수 필요"))
+    if efficiency:
+        caption={"good":"정상 (85% 이상)","warn":"주의 (75~85%)","bad":"낮음 (75% 미만)"}[efficiency["tone"]]
+        tiles.append(summary_tile("수면 효율",f'{efficiency["value"]:.1f}<span class="tile-unit">%</span>',efficiency["tone"],caption))
+    else:
+        tiles.append(summary_tile("수면 효율","—","idle","입력이 모자랍니다"))
+    if lifestyle:
+        tiles.append(summary_tile("생활습관 위험도",lifestyle["level"],lifestyle["tone"],f'지수 {lifestyle["value"]:.2f}'))
+    else:
+        tiles.append(summary_tile("생활습관 위험도","—","idle","입력이 모자랍니다"))
+    st.markdown(f'<div class="summary-title">나의 수면 분석</div><div class="tiles">{"".join(tiles)}</div>',unsafe_allow_html=True)
+
     left,right=st.columns([1.55,1])
     with left:
-        fig=go.Figure(go.Bar(x=[insomnia,apnea,shortage],y=["불면증","수면무호흡증","수면 부족"],orientation="h",marker_color=["#2265e5","#4b8fec","#19b6a2"],text=[f"{insomnia}%",f"{apnea}%",f"{shortage}%"],textposition="auto",cliponaxis=False,insidetextfont=dict(family="Pretendard",size=18,color="#fff"),outsidetextfont=dict(family="Pretendard",size=18,color="#14283a")))
-        fig.update_layout(title=dict(text="수면 장애 위험도",x=.045,xanchor="left",font=dict(size=22)),height=380,margin=dict(l=16,r=30,t=72,b=34),bargap=.36,xaxis=dict(range=[0,100],tickvals=[0,20,40,60,80,100],ticktext=["0%","20%","40%","60%","80%","100%"],gridcolor="#edf2f4",fixedrange=True,tickfont=dict(size=14,color="#5a6d7a")),yaxis=dict(autorange="reversed",fixedrange=True,automargin=True,tickfont=dict(size=18,color="#14283a")),paper_bgcolor="white",plot_bgcolor="white",font=dict(family="Pretendard",color="#14283a",size=15))
-        st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
+        radar=lifestyle_radar(d)
+        if radar:
+            st.plotly_chart(radar,use_container_width=True,config={"displayModeBar":False})
+        else:
+            st.markdown('<div class="pending"><div class="pending-title">생활습관 프로필</div><div class="pending-body">생활습관 입력이 모자라 프로필을 그릴 수 없습니다.</div></div>',unsafe_allow_html=True)
         st.markdown('<div class="notice">이 결과는 의료 진단이 아닌 건강 관리 참고용입니다. 증상이 지속되면 전문의와 상담하세요.</div>',unsafe_allow_html=True)
     with right:
-        # 효율 모델이 있으면 예측 효율(%)을, 없으면 기존 점수를 게이지에 씁니다.
         # 효율은 학습 범위가 57~99라 0부터 그리면 바늘이 항상 오른쪽에 몰립니다.
-        efficiency=predict_efficiency(d)
         if efficiency:
             g=efficiency["gauge"]
-            gauge_value,gauge_title,gauge_suffix=efficiency["value"],"수면 효율","%"
             axis_min,axis_max,warn,good=g["min"],g["max"],g["warn"],g["good"]
+            value=efficiency["value"]
+            score_color="#d94b4b" if value<warn else ("#e58a1f" if value<good else "#15966f")
+            gauge=go.Figure(go.Indicator(mode="gauge+number",value=value,title={"text":"수면 효율","font":{"size":20,"color":"#14283a"}},number={"suffix":"%","font":{"color":score_color,"size":46}},gauge={"axis":{"range":[axis_min,axis_max],"tickfont":{"size":13,"color":"#5a6d7a"}},"bar":{"color":score_color,"thickness":.68},"bgcolor":"#eef2f3","borderwidth":0,"steps":[{"range":[axis_min,warn],"color":"#f9dada"},{"range":[warn,good],"color":"#fde9c9"},{"range":[good,axis_max],"color":"#d9f1e7"}]}))
+            gauge.update_layout(height=340,margin=dict(l=48,r=48,t=78,b=28),paper_bgcolor="white",font=dict(family="Pretendard",color="#14283a"))
+            st.plotly_chart(gauge,use_container_width=True,config={"displayModeBar":False})
         else:
-            gauge_value,gauge_title,gauge_suffix=quality,"수면 건강 점수","점"
-            axis_min,axis_max,warn,good=0,100,33,66
-        score_color="#d94b4b" if gauge_value<warn else ("#e58a1f" if gauge_value<good else "#15966f")
-        gauge=go.Figure(go.Indicator(mode="gauge+number",value=gauge_value,title={"text":gauge_title,"font":{"size":20,"color":"#14283a"}},number={"suffix":gauge_suffix,"font":{"color":score_color,"size":46}},gauge={"axis":{"range":[axis_min,axis_max],"tickfont":{"size":13,"color":"#5a6d7a"}},"bar":{"color":score_color,"thickness":.68},"bgcolor":"#eef2f3","borderwidth":0,"steps":[{"range":[axis_min,warn],"color":"#f9dada"},{"range":[warn,good],"color":"#fde9c9"},{"range":[good,axis_max],"color":"#d9f1e7"}]}))
-        gauge.update_layout(height=340,margin=dict(l=48,r=48,t=78,b=28),paper_bgcolor="white",font=dict(family="Pretendard",color="#14283a"))
-        st.plotly_chart(gauge,use_container_width=True,config={"displayModeBar":False})
+            st.markdown('<div class="pending"><div class="pending-title">수면 효율</div><div class="pending-body">효율 예측 모델을 실행할 수 없습니다.<br>입력이 모두 채워졌는지 확인해 주세요.</div></div>',unsafe_allow_html=True)
         st.markdown('<div class="verdict-label">현재 상태</div>',unsafe_allow_html=True)
-        # 모델 예측이 없으면(필수 항목 누락·로드 실패) 기존 규칙으로 폴백
-        verdict=predict_quality(d)
         if verdict:
             st.markdown(f'<div class="verdict verdict-{verdict["tone"]}"><span>{verdict["icon"]}</span><span>{verdict["text"]}</span></div>',unsafe_allow_html=True)
             st.markdown(f'<div class="verdict-note">수면의 질 예측 모델 · 확신도 {max(verdict["proba"].values()):.0%}</div>',unsafe_allow_html=True)
-        elif insomnia>55:
-            st.markdown('<div class="verdict verdict-bad"><span>⚠️</span><span>주의 필요</span></div>',unsafe_allow_html=True)
         else:
-            st.markdown('<div class="verdict verdict-good"><span>✅</span><span>양호</span></div>',unsafe_allow_html=True)
+            st.markdown('<div class="pending pending-verdict"><div class="pending-body">수면의 질 모델은 심박수·혈압·걸음 수가 필요합니다.<br>상세 측정으로 입력해 주세요.</div></div>',unsafe_allow_html=True)
     st.markdown('<div style="height:28px"></div>',unsafe_allow_html=True)
     a,b,c=st.columns(3)
     status_metric(a,"수면 시간",f"{d['sleep']}시간","권장보다 짧음" if d['sleep']<7 else "적정 범위","warn" if d['sleep']<7 else "good")

@@ -32,13 +32,12 @@ MODEL_CANDIDATES = {
         PROJECT_ROOT / "model" / "sleep_efficiency_model.pkl",
         PROJECT_ROOT / "data" / "risk_data" / "efficiency_sleep_efficiency_model.pkl",
     ],
-    # 수면 장애 분류 -> 수면 장애 위험도 막대
-    "risk": [
-        PROJECT_ROOT / "model" / "risk_model_new.pkl",
-        PROJECT_ROOT / "model" / "sleep_disorder_model.pkl",
-        PROJECT_ROOT / "model" / "risk_model.pkl",
-    ],
 }
+
+RISK_LEVELS = (("낮음", "good"), ("중간", "warn"), ("높음", "bad"))
+
+# 학습 시 원본 점수(4~9)를 3등급으로 묶은 기준. 등급별 중앙값을 확률 가중평균해 정수 점수를 냅니다.
+QUALITY_SCORE_MID = {"Low": 4.5, "Medium": 6.5, "High": 8.5}
 
 # 게이지 눈금. 임상 기준 85%↑ 정상, 학습 범위가 57~99라 0부터 그리면 변별이 안 됩니다.
 EFFICIENCY_GAUGE = {"min": 55, "max": 100, "warn": 75, "good": 85}
@@ -232,11 +231,18 @@ def predict_quality(d):
     labels = bundle["labels"] or list(bundle["estimator"].classes_)
     label = str(labels[int(averaged.argmax())])
     text, tone, icon = QUALITY_LABELS.get(label, (label, "warn", "⚠️"))
+    # 등급이 원본 점수 2개씩(Low 4~5 / Medium 6~7 / High 8~9)을 덮으므로
+    # 등급 중앙값을 확률로 가중평균한 뒤 반올림해 정수 점수를 만듭니다.
+    mids = [QUALITY_SCORE_MID.get(str(l)) for l in labels]
+    score = None
+    if all(m is not None for m in mids):
+        score = int(round(float(np.dot(averaged, mids))))
     return {
         "label": label,
         "text": text,
         "tone": tone,
         "icon": icon,
+        "score": score,
         "proba": {str(l): float(p) for l, p in zip(labels, averaged)},
         "marginalized": marginal_col,
     }
@@ -290,23 +296,95 @@ def predict_efficiency(d):
     return {"value": value, "tone": tone, "gauge": g}
 
 
-def predict_risk(d):
-    """수면 장애별 확률(%)을 예측합니다. 모델이 없으면 None."""
-    bundle = load_bundle("risk")
-    if bundle is None:
-        return None
-    estimator = bundle["estimator"]
-    if not hasattr(estimator, "predict_proba"):
-        return None          # 회귀 모델이면 막대그래프에 못 씁니다.
-    X, weights = _predict_frame(bundle, d)
-    if X is None:
-        return None
+# ── 생활습관 위험도 ───────────────────────────────────────────────────────────
+# 팀에서 받은 원식(데이터를 R^2 0.9999로 재현):
+#   0.5*Screen_Time_Hours + 0.01*Caffeine_Intake_mg - Physical_Activity_Minutes/60
+# 여기에 폼에서 받지만 원식이 쓰지 않던 4개 항을 더했습니다. 원래 3개 항을 압도하지
+# 않도록 기여 폭을 1.35 이하로 잡았습니다(원식 항의 폭은 2.14~6.15).
+LIFESTYLE_WEIGHTS = {
+    "screen": 0.5,          # 시간당
+    "caffeine_mg": 0.01,    # mg당
+    "activity_min": 1 / 60, # 분당 (감산)
+    "sleep_deficit": 0.30,  # 7시간 미달분 1시간당
+    "stress": 1.50,         # 1~10을 0~1.5로
+    "smoking": 1.00,
+    "alcohol": 0.50,
+}
+# 확장 식으로 학습 데이터 30,000행을 계산해 다시 뽑은 33/67 분위입니다.
+LIFESTYLE_BANDS = (4.79, 6.10)
+LIFESTYLE_SLEEP_TARGET = 7.0
+
+
+def predict_lifestyle_risk(d):
+    """생활습관 위험도를 산출식으로 계산합니다. 모델을 쓰지 않습니다."""
+    w = LIFESTYLE_WEIGHTS
     try:
-        proba = np.average(estimator.predict_proba(X), axis=0, weights=weights)
+        screen = d["phone_hours"]
+        caffeine = d["caffeine"] * MG_PER_CUP
+        activity = d["activity"]
+        sleep = d["sleep"]
+        stress = d["stress"]
+    except (KeyError, TypeError):
+        return None
+    if any(v is None for v in (screen, caffeine, activity, sleep, stress)):
+        return None
+
+    value = (w["screen"] * screen
+             + w["caffeine_mg"] * caffeine
+             - w["activity_min"] * activity
+             + max(0.0, LIFESTYLE_SLEEP_TARGET - sleep) * w["sleep_deficit"]
+             + (stress - 1) / 9 * w["stress"]
+             + (w["smoking"] if d.get("smoking") == "흡연" else 0.0)
+             + (w["alcohol"] if d.get("recent_alcohol") == "음주함" else 0.0))
+
+    low, high = LIFESTYLE_BANDS
+    idx = 0 if value < low else (1 if value < high else 2)
+    level, tone = RISK_LEVELS[idx]
+    return {"value": float(value), "level": level, "tone": tone, "bands": LIFESTYLE_BANDS}
+
+RISK_CSV = PROJECT_ROOT / "data" / "risk_data" / "Sleep Health and Lifestyle Dataset.csv"
+
+# 레이더 축. (표시명, CSV 컬럼, 폼 키, 클수록 좋은가)
+LIFESTYLE_AXES = (
+    ("수면 시간", "Sleep_Duration", "sleep", True),
+    ("활동량", "Physical_Activity_Minutes", "activity", True),
+    ("스크린타임", "Screen_Time_Hours", "phone_hours", False),
+    ("카페인", "Caffeine_Intake_mg", "caffeine", False),
+    ("스트레스", "Stress_Level", "stress", False),
+    ("낮 졸림", "Daytime_Sleepiness", "daytime_sleepiness", False),
+)
+
+
+@cache_resource
+def _lifestyle_reference():
+    """레이더 축의 기준 분포를 학습 데이터에서 읽어옵니다."""
+    try:
+        cols = [c for _, c, _, _ in LIFESTYLE_AXES]
+        return pd.read_csv(RISK_CSV, usecols=cols)
     except Exception:
         return None
-    labels = bundle["labels"] or list(estimator.classes_)
-    return {str(l): float(p) * 100 for l, p in zip(labels, proba)}
+
+
+def lifestyle_profile(d):
+    """생활습관 입력을 학습 데이터 대비 백분위로 바꿉니다.
+
+    축마다 좋고 나쁨의 방향이 달라, 바깥쪽이 항상 양호하도록 방향을 맞춥니다.
+    값을 지어내지 않고 사용자 입력의 상대 위치만 계산합니다.
+    """
+    ref = _lifestyle_reference()
+    if ref is None:
+        return None
+    out = []
+    for name, col, key, higher_is_better in LIFESTYLE_AXES:
+        value = d.get(key)
+        if key == "caffeine" and value is not None:
+            value = value * MG_PER_CUP
+        if value is None:
+            continue
+        pct = float((ref[col] <= value).mean() * 100)
+        out.append({"axis": name, "value": value,
+                    "score": pct if higher_is_better else 100 - pct})
+    return out or None
 
 
 @cache_resource
@@ -331,10 +409,14 @@ SAMPLE_INPUT = {
 
 
 def diagnose():
-    """세 모델의 로드 상태와 폼에서 못 채우는 컬럼을 점검합니다."""
+    """모델 로드 상태와 폼에서 못 채우는 컬럼을 점검합니다."""
+    print("=" * 72)
+    print("[lifestyle_risk] 모델 없이 산출식으로 계산합니다 (predict_lifestyle_risk)")
+    print(f"  가중치: {LIFESTYLE_WEIGHTS}")
+    print(f"  구간: 낮음 < {LIFESTYLE_BANDS[0]} <= 중간 < {LIFESTYLE_BANDS[1]} <= 높음")
+    print(f"  샘플: {predict_lifestyle_risk(SAMPLE_INPUT)}")
     for kind, predict in (("quality", predict_quality),
-                          ("efficiency", predict_efficiency),
-                          ("risk", predict_risk)):
+                          ("efficiency", predict_efficiency)):
         print("=" * 72)
         bundle = load_bundle(kind)
         if bundle is None:
