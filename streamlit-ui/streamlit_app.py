@@ -76,12 +76,6 @@ if st.session_state.get("chat_state_version")!="closed_by_default_v1":
     st.session_state.chat_state_version="closed_by_default_v1"
 st.markdown('<div class="brand"><span class="mark">✦</span><span>자니<span class="blue">(Zzz-ni)</span></span></div>',unsafe_allow_html=True)
 
-def bmi_category(bmi):
-    if bmi < 18.5: return "Underweight"
-    if bmi < 25: return "Normal"
-    if bmi < 30: return "Overweight"
-    return "Obese"
-
 def sleep_duration(bedtime,wake_time):
     base=datetime(2000,1,1)
     start=datetime.combine(base.date(),bedtime)
@@ -376,10 +370,6 @@ if not st.session_state.analyzed:
     """, unsafe_allow_html=True)
     st.markdown('<div class="form-title">핵심 생활 습관 입력</div><div class="form-guide">정확한 분석을 위해 정보를 입력해주세요.</div>',unsafe_allow_html=True)
 
-    def field_label(text,required=True):
-        star='<span style="color:#e5484d;font-weight:900">*</span>' if required else '<span style="color:#758797;font-size:.82rem;font-weight:600">(선택)</span>'
-        st.markdown(f'<div style="font-size:1rem;font-weight:700;margin:.2rem 0 .35rem">{text} {star}</div>',unsafe_allow_html=True)
-
     def section_header(icon,title,description,tone="blue"):
         icon_svg={
             "기본 정보":'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>',
@@ -548,36 +538,30 @@ else:
     a,b,c=st.columns(3)
     status_metric(a,"수면 시간",f"{d['sleep']}시간","권장보다 짧음" if d['sleep']<7 else "적정 범위","warn" if d['sleep']<7 else "good")
     status_metric(b,"스트레스",f"{d['stress']}/10","관리 필요" if d['stress']>6 else "안정적","warn" if d['stress']>6 else "good")
-    if d["mode"]=="상세 폼":
-        status_metric(c,"흡연 여부",d["smoking"],d["smoking"],"bad" if d["smoking"]=="흡연" else "good")
-    else:
-        bmi_status=bmi_category(d['bmi'])
-        status_metric(c,"BMI",f"{d['bmi']:.1f}",bmi_status,"good" if bmi_status=="Normal" else ("bad" if bmi_status=="Obese" else "warn"))
-    if d["mode"]=="상세 폼":
-        st.markdown('<div style="height:16px"></div>',unsafe_allow_html=True)
-        c4,c5=st.columns(2)
-        status_metric(c4,"하루 카페인",f"{d['caffeine']:g}잔","섭취 조절 권장" if d['caffeine']>2 else "적정 수준","warn" if d['caffeine']>2 else "good")
-        status_metric(c5,"최근 24시간 내 음주",d['recent_alcohol'],"수면 영향 가능" if d['recent_alcohol']=="음주함" else "음주 없음","warn" if d['recent_alcohol']=="음주함" else "good")
-    if d["mode"]=="상세 폼":
-        with st.expander("입력한 상세 데이터 확인"):
-            # 혈압·심박수·걸음 수는 선택 항목이라 비어 있을 수 있습니다.
-            blood_pressure_text=f'{d["sys"]}/{d["dia"]} mmHg' if d["sys"] is not None and d["dia"] is not None else "미입력"
-            heart_rate_text=f'{d["heart_rate"]}회/분' if d["heart_rate"] is not None else "미입력"
-            daily_steps_text=f'{d["daily_steps"]:,}걸음' if d["daily_steps"] is not None else "미입력"
-            details=[
-                ("성별","여성" if d["gender"]=="Female" else "남성"),("나이",f'{d["age"]}세'),
-                ("키",f'{d.get("height",0):g}cm'),("몸무게",f'{d.get("weight",0):g}kg'),
-                ("BMI",f'{d["bmi"]:.1f}'),
-                ("수면 패턴",f'{d["bedtime"]} ~ {d["wake_time"]}'),("자동 계산 수면시간",f'{d["sleep"]}시간'),
-                ("밤중 깬 횟수",f'{d.get("night_awakenings","미입력")}회'),
-                ("신체 활동수준",f'{d["activity"]}분/일'),("스트레스 지수",f'{d["stress"]}/10'),
-                ("혈압",blood_pressure_text),("심박수",heart_rate_text),
-                ("하루 걸음 수",daily_steps_text),("하루 카페인 섭취량",f'{d["caffeine"]:g}잔'),
-                ("최근 24시간 내 음주 여부",d["recent_alcohol"]),("하루 휴대폰 사용시간",f'{d.get("phone_hours",0):g}시간'),
-                ("낮 시간 졸림 정도",f'{d.get("daytime_sleepiness",0)}/10'),("흡연 여부",d["smoking"]),
-            ]
-            rows="".join(f'<div class="dl-row"><span class="dl-k">{label}</span><span class="dl-v">{value}</span></div>' for label,value in details)
-            st.markdown(f'<div class="dl">{rows}</div>',unsafe_allow_html=True)
+    status_metric(c,"흡연 여부",d["smoking"],d["smoking"],"bad" if d["smoking"]=="흡연" else "good")
+    st.markdown('<div style="height:16px"></div>',unsafe_allow_html=True)
+    c4,c5=st.columns(2)
+    status_metric(c4,"하루 카페인",f"{d['caffeine']:g}잔","섭취 조절 권장" if d['caffeine']>2 else "적정 수준","warn" if d['caffeine']>2 else "good")
+    status_metric(c5,"최근 24시간 내 음주",d['recent_alcohol'],"수면 영향 가능" if d['recent_alcohol']=="음주함" else "음주 없음","warn" if d['recent_alcohol']=="음주함" else "good")
+    with st.expander("입력한 상세 데이터 확인"):
+        # 혈압·심박수·걸음 수는 선택 항목이라 비어 있을 수 있습니다.
+        blood_pressure_text=f'{d["sys"]}/{d["dia"]} mmHg' if d["sys"] is not None and d["dia"] is not None else "미입력"
+        heart_rate_text=f'{d["heart_rate"]}회/분' if d["heart_rate"] is not None else "미입력"
+        daily_steps_text=f'{d["daily_steps"]:,}걸음' if d["daily_steps"] is not None else "미입력"
+        details=[
+            ("성별","여성" if d["gender"]=="Female" else "남성"),("나이",f'{d["age"]}세'),
+            ("키",f'{d.get("height",0):g}cm'),("몸무게",f'{d.get("weight",0):g}kg'),
+            ("BMI",f'{d["bmi"]:.1f}'),
+            ("수면 패턴",f'{d["bedtime"]} ~ {d["wake_time"]}'),("자동 계산 수면시간",f'{d["sleep"]}시간'),
+            ("밤중 깬 횟수",f'{d.get("night_awakenings","미입력")}회'),
+            ("신체 활동수준",f'{d["activity"]}분/일'),("스트레스 지수",f'{d["stress"]}/10'),
+            ("혈압",blood_pressure_text),("심박수",heart_rate_text),
+            ("하루 걸음 수",daily_steps_text),("하루 카페인 섭취량",f'{d["caffeine"]:g}잔'),
+            ("최근 24시간 내 음주 여부",d["recent_alcohol"]),("하루 휴대폰 사용시간",f'{d.get("phone_hours",0):g}시간'),
+            ("낮 시간 졸림 정도",f'{d.get("daytime_sleepiness",0)}/10'),("흡연 여부",d["smoking"]),
+        ]
+        rows="".join(f'<div class="dl-row"><span class="dl-k">{label}</span><span class="dl-v">{value}</span></div>' for label,value in details)
+        st.markdown(f'<div class="dl">{rows}</div>',unsafe_allow_html=True)
     personalized_tip=st.session_state.get("personalized_tip") or random.choice(PERSONALIZED_TIPS)
     st.session_state.personalized_tip=personalized_tip
     st.markdown(f'<div class="tip"><div class="eyebrow">PERSONALIZED TIP</div><h3>오늘부터 이렇게 시작해 보세요</h3><p>{personalized_tip}</p></div>',unsafe_allow_html=True)
