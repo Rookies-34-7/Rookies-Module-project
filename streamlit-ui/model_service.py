@@ -17,7 +17,7 @@ except Exception:                      # 터미널에서 직접 실행할 때(�
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# 앞 경로부터 탐색. 파일이 없으면 None을 돌려 화면이 기존 로직으로 폴백합니다.
+# 앞 경로부터 탐색. 하나도 없으면 None을 돌려 화면이 안내 카드로 폴백합니다.
 MODEL_CANDIDATES = {
     # 수면의 질 3분류 -> 양호/주의/위험
     "quality": [

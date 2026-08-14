@@ -17,9 +17,8 @@ load_dotenv(Path(__file__).with_name(".env"))
 def setting(name,default=""):
     """설정값을 st.secrets -> 환경변수(.env) 순으로 찾습니다.
 
-    로컬에서는 .env를, Streamlit Cloud처럼 .env를 올릴 수 없는 배포 환경에서는
-    secrets를 쓰게 됩니다. secrets 파일이 아예 없으면 st.secrets 접근이 예외를
-    던지므로 감싸 둡니다.
+    로컬은 .env, .env를 올릴 수 없는 배포 환경은 secrets를 씁니다.
+    secrets 파일이 없으면 st.secrets 접근 자체가 예외라 감싸 둡니다.
     """
     try:
         if name in st.secrets:
@@ -149,8 +148,6 @@ def status_metric(container,label,value,status,tone="good"):
     container.markdown(f'<div class="card"><div class="card-label">{label}</div><div class="card-value">{value}</div><span class="pill pill-{tone}">{status}</span></div>',unsafe_allow_html=True)
 
 if not st.session_state.analyzed:
-    # 입력 화면은 참고 시안의 규격을 그대로 사용합니다. 기존 style.css는 결과 화면과
-    # 챗봇에도 쓰이므로 제거하지 않고, 입력 화면에서만 마지막 CSS로 덮어씁니다.
     st.markdown("""
     <style>
     .stApp,
@@ -340,8 +337,6 @@ if not st.session_state.analyzed:
     }
     .scale-right { color:#75839a !important; font-size:11px !important; text-align:right !important; }
     [data-testid="stCaptionContainer"] p { font-size:11px !important; }
-    /* hue-rotate로 색을 돌리지 않습니다. 슬라이더·라디오는 이미 테마의
-       primaryColor(#2265E5)로 칠해지므로, 회전을 걸면 파랑이 한 번 더 돌아 초록이 됩니다. */
 
     div[data-testid="stFormSubmitButton"] {
         margin-top: 14px !important;
@@ -414,8 +409,7 @@ if not st.session_state.analyzed:
                 st.markdown(f'<div class="bmi-card"><div><div class="bmi-title">BMI</div><div class="bmi-sub">체질량지수</div></div><div class="bmi-value-wrap"><div class="bmi-value">{bmi_value}</div><div class="bmi-badge">{bmi_text}</div></div></div>',unsafe_allow_html=True)
             with st.container(border=True,key="sleep_habit_card"):
                 section_header("🌙","수면 습관","하루 수면 패턴을 입력해 주세요.","purple")
-                # 야간 각성 횟수는 효율 최종 모델(GradientBoosting)의 필수 입력이라
-                # 폼에서 직접 받습니다. 없으면 효율 예측이 통째로 비활성화됩니다.
+                # 효율 모델의 필수 입력. 비면 효율 예측이 통째로 비활성화됩니다.
                 bedtime_col,wake_col,awake_col=st.columns(3)
                 with bedtime_col:
                     d_bedtime=st.time_input("취침시간",value=time(23,30),step=timedelta(minutes=15),key="detail_bedtime_input")
@@ -489,7 +483,6 @@ else:
     lifestyle=predict_lifestyle_risk(d)
     st.markdown(f'<div class="eyebrow">YOUR SLEEP REPORT · {d["mode"]}</div><div class="hero">수면 건강 분석이<br><span class="blue">완료되었어요.</span></div><div class="sub">입력한 생활 습관을 기반으로 현재 수면 상태와 주요 위험 요인을 분석했습니다.</div>',unsafe_allow_html=True)
 
-    # 나의 수면 분석 — 모델 3개의 결과를 한 줄로 요약합니다.
     def summary_tile(label,value,tone,caption):
         return f'<div class="tile tile-{tone}"><div class="tile-label">{label}</div><div class="tile-value">{value}</div><div class="tile-caption">{caption}</div></div>'
     tiles=[]
@@ -544,7 +537,6 @@ else:
     status_metric(c4,"하루 카페인",f"{d['caffeine']:g}잔","섭취 조절 권장" if d['caffeine']>2 else "적정 수준","warn" if d['caffeine']>2 else "good")
     status_metric(c5,"최근 24시간 내 음주",d['recent_alcohol'],"수면 영향 가능" if d['recent_alcohol']=="음주함" else "음주 없음","warn" if d['recent_alcohol']=="음주함" else "good")
     with st.expander("입력한 상세 데이터 확인"):
-        # 혈압·심박수·걸음 수는 선택 항목이라 비어 있을 수 있습니다.
         blood_pressure_text=f'{d["sys"]}/{d["dia"]} mmHg' if d["sys"] is not None and d["dia"] is not None else "미입력"
         heart_rate_text=f'{d["heart_rate"]}회/분' if d["heart_rate"] is not None else "미입력"
         daily_steps_text=f'{d["daily_steps"]:,}걸음' if d["daily_steps"] is not None else "미입력"
