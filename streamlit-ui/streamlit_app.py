@@ -95,6 +95,37 @@ def save_and_analyze(data):
     st.session_state.analyzed=True
     st.rerun()
 
+TRUSTED_SLEEP_DOMAINS = [
+    "health.kdca.go.kr",    #질병관리청 국가건강정보포털
+    "mentalhealth.go.kr",   #국가정신건강정보포털
+    "snuh.org",             #서울대학교병원
+    "amc.seoul.kr",         #서울아산병원
+    "sleepnet.or.kr"        #대한수면연구학회
+]
+
+WEB_SEARCH_TOOL = {
+    "type": "web_search",
+    "filters": {
+        "allowed_domains": TRUSTED_SLEEP_DOMAINS
+    }
+}
+
+GUIDE_INSTRUCTION = """
+당신은 친절한 한국어 AI 수면 코치입니다. 의료 진단을 내리지 말고, 
+생활 습관 개선에 도움이 되는 일반적인 정보만 간결하게 안내하세요. 
+응급 증상이나 심각한 수면장애가 의심되면 의료진 상담을 권하세요.
+수면과 관련 없는 질문이 들어오면 대답할 수 없다고 말하세요.
+
+웹 검색 시 다음 원칙을 따릅니다.
+
+1. 허용된 의료·공공기관 사이트의 자료만 사용한다.
+2. 수면 습관 및 생활습관 개선과 직접 관련된 자료를 우선한다.
+3. 가능하면 최신 자료를 우선한다.
+4. 근거가 불명확하면 확정적으로 표현하지 않는다.
+5. 질병을 진단하거나 약물을 추천하지 않는다.
+6. 검색한 근거와 사용자의 머신러닝 분석 결과를 구분해서 설명한다.
+"""
+
 def ask_sleep_coach(prompt):
     st.session_state.messages.append({"role":"user","content":prompt})
     d=st.session_state.get("data",{})
@@ -113,7 +144,7 @@ def ask_sleep_coach(prompt):
             client=OpenAI(api_key=api_key)
             response=client.responses.create(
                 model=os.getenv("OPENAI_MODEL","gpt-4.1-mini"),
-                instructions=("당신은 친절한 한국어 AI 수면 코치입니다. 의료 진단을 내리지 말고, 생활 습관 개선에 도움이 되는 일반적인 정보만 간결하게 안내하세요. 응급 증상이나 심각한 수면장애가 의심되면 의료진 상담을 권하세요. "+health_context),
+                instructions=(GUIDE_INSTRUCTION + health_context),
                 input=[{"role":m["role"],"content":m["content"]} for m in st.session_state.messages[-10:]],
             )
             answer=response.output_text or "답변을 생성하지 못했어요. 잠시 후 다시 시도해 주세요."
