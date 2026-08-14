@@ -41,7 +41,7 @@ if music_path.exists():
           html,body{{margin:0;background:transparent;overflow:hidden;font-family:sans-serif}}
           .volume{{height:28px;display:flex;align-items:center;gap:6px;padding:0 2px}}
           .volume span{{color:#fff;font-size:14px;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,.5)}}
-          input{{width:88px;height:12px;accent-color:#fff;cursor:pointer}}
+          input{{width:100px;height:12px;accent-color:#fff;cursor:pointer}}
         </style>
         <script>
           const audio=document.getElementById('bgm');
@@ -141,79 +141,322 @@ def status_metric(container,label,value,status,tone="good"):
     container.markdown(f'<div class="card"><div class="card-label">{label}</div><div class="card-value">{value}</div><span class="pill pill-{tone}">{status}</span></div>',unsafe_allow_html=True)
 
 if not st.session_state.analyzed:
-    st.markdown('<div class="eyebrow">AI SLEEP HEALTH ANALYSIS</div><div class="hero">당신의 수면을<br><span class="blue">측정해 드립니다.</span></div><div class="sub">필수 항목을 모두 입력하면 수면 건강 분석을 시작할 수 있어요.</div>',unsafe_allow_html=True)
-    st.markdown('<div class="form-title">수면 건강 측정</div>',unsafe_allow_html=True)
+    # 입력 화면은 참고 시안의 규격을 그대로 사용합니다. 기존 style.css는 결과 화면과
+    # 챗봇에도 쓰이므로 제거하지 않고, 입력 화면에서만 마지막 CSS로 덮어씁니다.
+    st.markdown("""
+    <style>
+    .stApp,
+    [data-testid="stAppViewContainer"] {
+        --primary-color: #2d70ee !important;
+    }
+
+    [data-testid="stColumn"] > [data-testid="stVerticalBlock"] { gap: .45rem !important; }
+    [data-testid="stForm"] [data-testid="stVerticalBlock"] { gap: .5rem !important; }
+    .form-title {
+        color: #10213d !important;
+        font-size: 1.45rem !important;
+        font-weight: 800 !important;
+        line-height: 1.25 !important;
+        margin: 0 0 .25rem !important;
+        text-shadow: none !important;
+    }
+    .form-guide {
+        color: #75839a !important;
+        font-size: .82rem !important;
+        margin: 0 0 .75rem !important;
+    }
+
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255,255,255,.90) !important;
+        border: 1px solid rgba(190,205,225,.55) !important;
+        border-radius: 18px !important;
+        padding: 10px 12px !important;
+        box-shadow: 0 5px 18px rgba(20,50,100,.06) !important;
+        backdrop-filter: none !important;
+    }
+    .st-key-basic_info_card,
+    .st-key-sleep_habit_card,
+    .st-key-activity_card,
+    .st-key-stress_card,
+    .st-key-health_detail_card,
+    .st-key-sleepiness_card {
+        min-height: 0 !important;
+        margin-bottom: 0 !important;
+        gap: .42rem !important;
+        padding: 10px 12px !important;
+        background: rgba(255,255,255,.90) !important;
+        border: 1px solid rgba(190,205,225,.55) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 5px 18px rgba(20,50,100,.06) !important;
+    }
+    .st-key-basic_info_card {
+        padding-bottom: 28px !important;
+    }
+    /* 좌우 입력 열의 시작점과 끝점을 동일하게 맞춥니다. */
+    [data-testid="stColumn"]:has(.st-key-basic_info_card),
+    [data-testid="stColumn"]:has(.st-key-health_detail_card) {
+        display: flex !important;
+    }
+    [data-testid="stColumn"]:has(.st-key-basic_info_card) > [data-testid="stVerticalBlock"],
+    [data-testid="stColumn"]:has(.st-key-health_detail_card) > [data-testid="stVerticalBlock"] {
+        flex: 1 1 auto !important;
+        height: 100% !important;
+    }
+    [data-testid="stColumn"]:has(.st-key-basic_info_card) > [data-testid="stVerticalBlock"] > [data-testid="stLayoutWrapper"]:has(.st-key-basic_info_card),
+    [data-testid="stColumn"]:has(.st-key-health_detail_card) > [data-testid="stVerticalBlock"] > [data-testid="stLayoutWrapper"]:has(.st-key-health_detail_card) {
+        flex: 1 1 auto !important;
+    }
+    .st-key-basic_info_card,
+    .st-key-health_detail_card {
+        height: 100% !important;
+    }
+
+    .st-key-basic_info_card [data-testid="stVerticalBlock"],
+    .st-key-sleep_habit_card [data-testid="stVerticalBlock"],
+    .st-key-activity_card [data-testid="stVerticalBlock"],
+    .st-key-stress_card [data-testid="stVerticalBlock"],
+    .st-key-health_detail_card [data-testid="stVerticalBlock"],
+    .st-key-sleepiness_card [data-testid="stVerticalBlock"] {
+        gap: .42rem !important;
+    }
+    .section-head {
+        display:flex !important;
+        align-items:center !important;
+        gap:10px !important;
+        min-height:36px !important;
+        margin-bottom:7px !important;
+    }
+    .st-key-sleep_habit_card .section-head,
+    .st-key-health_detail_card .section-head {
+        margin-bottom:15px !important;
+    }
+    .section-icon {
+        width:32px !important; height:32px !important; min-width:32px !important;
+        display:inline-flex !important; align-items:center !important; justify-content:center !important;
+        border-radius:50% !important;
+    }
+    .section-icon svg { width:18px !important; height:18px !important; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+    .section-icon.blue { background:#e9f1ff !important; color:#2f6ff2 !important; }
+    .section-icon.purple { background:#f0ebff !important; color:#7257f5 !important; }
+    .section-icon.green { background:#e3f7ef !important; color:#22a87a !important; }
+    .section-icon.orange { background:#fff0e1 !important; color:#f0802d !important; }
+    .section-icon.sky { background:#e7f2ff !important; color:#3479ed !important; }
+    .section-title {
+        color: #13294b !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin: 0 0 1px !important;
+        padding: 0 !important;
+        text-shadow: none !important;
+    }
+    .section-desc {
+        color: #75839a !important;
+        font-size: 11px !important;
+        line-height: 1.35 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    div[data-baseweb="select"] > div,
+    div[data-testid="stNumberInputContainer"],
+    div[data-testid="stTimeInput"] input {
+        border-radius: 10px !important;
+    }
+    div[data-testid="stNumberInputContainer"] input,
+    div[data-testid="stTimeInput"] input,
+    div[data-baseweb="select"] > div {
+        min-height: 34px !important;
+        height: 34px !important;
+        background: rgba(255,255,255,.96) !important;
+    }
+    div[data-testid="stNumberInputContainer"],
+    div[data-testid="stNumberInputContainer"] button,
+    div[data-testid="stTimeInput"] > div,
+    div[data-baseweb="select"] > div { min-height:34px !important; height:34px !important; }
+    label[data-testid="stWidgetLabel"] p {
+        color: #13294b !important;
+        font-size: 12px !important;
+        font-weight: 650 !important;
+    }
+    .st-key-basic_info_card label[data-testid="stWidgetLabel"],
+    .st-key-health_detail_card label[data-testid="stWidgetLabel"] {
+        padding-left: 5px !important;
+    }
+    .st-key-sleep_habit_card label[data-testid="stWidgetLabel"] {
+        padding-left: 5px !important;
+    }
+
+    .bmi-card {
+        background: linear-gradient(90deg,#eef5ff,#f7fbff) !important;
+        border: 1px solid #cfe0ff !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 7px 10px !important;
+        margin-top: 4px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        min-height: 44px !important;
+        overflow: hidden !important;
+    }
+    .bmi-title { color:#183963 !important; font-size:13px !important; font-weight:700 !important; }
+    .bmi-sub { color:#8390a3 !important; font-size:10px !important; }
+    .bmi-value-wrap {
+        display:flex !important;
+        align-items:center !important;
+        justify-content:flex-end !important;
+        gap:7px !important;
+        min-width:0 !important;
+        flex-shrink:1 !important;
+    }
+    .bmi-value {
+        color:#2864dc !important;
+        font-size:20px !important;
+        font-weight:750 !important;
+        line-height:1 !important;
+        white-space:nowrap !important;
+    }
+    .bmi-badge {
+        background:#e1f6e9 !important;
+        color:#32a064 !important;
+        border-radius:999px !important;
+        padding:3px 6px !important;
+        font-size:9px !important;
+        font-weight:700 !important;
+        line-height:1.2 !important;
+        white-space:nowrap !important;
+    }
+    .scale-right { color:#75839a !important; font-size:11px !important; text-align:right !important; }
+    [data-testid="stCaptionContainer"] p { font-size:11px !important; }
+    [data-testid="stSlider"] [role="group"] > div > div:first-child,
+    [data-testid="stSlider"] [role="group"] > div > div:nth-child(2),
+    [data-testid="stRadioOption"] > div > div > div:first-child {
+        filter: hue-rotate(220deg) !important;
+    }
+
+    div[data-testid="stFormSubmitButton"] {
+        margin-top: 14px !important;
+    }
+    div[data-testid="stFormSubmitButton"] button,
+    div.stButton > button {
+        height: 36px !important;
+        min-height: 36px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border: 0 !important;
+        border-radius: 999px !important;
+        background: linear-gradient(90deg,#2563eb,#3087e8) !important;
+        color: white !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        box-shadow: 0 8px 18px rgba(37,99,235,.22) !important;
+    }
+    div[data-testid="stFormSubmitButton"] button:hover,
+    div.stButton > button:hover {
+        filter: brightness(1.04) !important;
+        color: white !important;
+    }
+    .submit-gap { height: 2px !important; }
+    </style>
+    """, unsafe_allow_html=True)
+    st.markdown('<div class="form-title">핵심 생활 습관 입력</div><div class="form-guide">정확한 분석을 위해 정보를 입력해주세요.</div>',unsafe_allow_html=True)
 
     def field_label(text,required=True):
         star='<span style="color:#e5484d;font-weight:900">*</span>' if required else '<span style="color:#758797;font-size:.82rem;font-weight:600">(선택)</span>'
         st.markdown(f'<div style="font-size:1rem;font-weight:700;margin:.2rem 0 .35rem">{text} {star}</div>',unsafe_allow_html=True)
 
-    with st.form("sleep_health_form"):
-        basic_col,extra_col=st.columns(2,gap="large")
-        with basic_col:
-            st.markdown('<div class="detail-section-title">기본 정보</div>',unsafe_allow_html=True)
-            field_label("성별")
-            d_gender=st.selectbox("성별",["Female","Male"],index=None,placeholder="성별을 선택하세요",format_func=lambda x:{"Female":"여성","Male":"남성"}[x],label_visibility="collapsed")
-            field_label("나이")
-            d_age=st.number_input("나이",min_value=18,max_value=100,value=None,step=1,placeholder="나이를 입력하세요",label_visibility="collapsed")
-            height_col,weight_col=st.columns(2)
-            with height_col:
-                field_label("키 (cm)")
-                d_height=st.number_input("키 (cm)",min_value=120.0,max_value=220.0,value=None,step=.5,placeholder="키",key="detail_height",label_visibility="collapsed")
-            with weight_col:
-                field_label("몸무게 (kg)")
-                d_weight=st.number_input("몸무게 (kg)",min_value=30.0,max_value=200.0,value=None,step=.5,placeholder="몸무게",key="detail_weight",label_visibility="collapsed")
-            d_bmi=round(d_weight/((d_height/100)**2),1) if d_height is not None and d_weight is not None else None
-            st.markdown('<div style="height:20px"></div>',unsafe_allow_html=True)
-            with st.expander("선택 입력 항목  ·  혈압, 심박수, 하루 걸음 수"):
-                st.caption("알고 있는 항목만 입력해 주세요. 입력하지 않아도 분석할 수 있습니다.")
+    def section_header(icon,title,description,tone="blue"):
+        icon_svg={
+            "기본 정보":'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>',
+            "상세 건강 정보":'<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/><path d="M7 12h3l1-2 2 4 1-2h3"/></svg>',
+            "수면 습관":'<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>',
+            "신체 활동 수준":'<svg viewBox="0 0 24 24"><circle cx="14" cy="4" r="2"/><path d="m5 21 3-5 2-4 4 3 3 6M7 10l3-2 3 2 3-2M11 12l-2 4"/></svg>',
+            "스트레스 지수":'<svg viewBox="0 0 24 24"><path d="M9.5 4A3.5 3.5 0 0 0 6 7.5a3 3 0 0 0-1 5.8A3.5 3.5 0 0 0 8.5 19H10V5.5A1.5 1.5 0 0 0 8.5 4M14.5 4A3.5 3.5 0 0 1 18 7.5a3 3 0 0 1 1 5.8 3.5 3.5 0 0 1-3.5 5.7H14V5.5A1.5 1.5 0 0 1 15.5 4M6 9h4M14 9h4M6 15h4M14 15h4"/></svg>',
+            "낮 시간 졸림 정도 (1~10단계)":'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.41M17.66 6.34l1.41-1.41"/></svg>',
+        }.get(title,'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>')
+        st.markdown(
+            f'<div class="section-head"><span class="section-icon {tone}">{icon_svg}</span>'
+            f'<div><div class="section-title">{title}</div><div class="section-desc">{description}</div></div></div>',
+            unsafe_allow_html=True,
+        )
+
+    with st.form("sleep_health_form",border=False):
+        left_col,right_col=st.columns(2,gap="medium")
+        with left_col:
+            with st.container(border=True,key="basic_info_card"):
+                section_header("👤","기본 정보","기본적인 신체 정보를 입력해 주세요.","blue")
+                gender_col,age_col=st.columns(2)
+                with gender_col:
+                    d_gender=st.selectbox("성별",["Female","Male"],index=0,format_func=lambda x:{"Female":"여성","Male":"남성"}[x])
+                with age_col:
+                    d_age=st.number_input("나이",min_value=1,max_value=120,value=32,step=1)
+                height_col,weight_col=st.columns(2)
+                with height_col:
+                    d_height=st.number_input("키 (cm)",min_value=100.0,max_value=250.0,value=170.0,step=.1,format="%.2f",key="detail_height")
+                with weight_col:
+                    d_weight=st.number_input("몸무게 (kg)",min_value=20.0,max_value=300.0,value=65.0,step=.1,format="%.2f",key="detail_weight")
+                d_bmi=round(d_weight/((d_height/100)**2),1) if d_height is not None and d_weight is not None else None
+                if d_bmi is None:
+                    bmi_value,bmi_text="—","입력 대기"
+                elif d_bmi < 18.5:
+                    bmi_value,bmi_text=f"{d_bmi:.1f}","저체중"
+                elif d_bmi < 23:
+                    bmi_value,bmi_text=f"{d_bmi:.1f}","정상 범위"
+                elif d_bmi < 25:
+                    bmi_value,bmi_text=f"{d_bmi:.1f}","과체중"
+                else:
+                    bmi_value,bmi_text=f"{d_bmi:.1f}","비만 범위"
+                st.markdown(f'<div class="bmi-card"><div><div class="bmi-title">BMI</div><div class="bmi-sub">체질량지수</div></div><div class="bmi-value-wrap"><div class="bmi-value">{bmi_value}</div><div class="bmi-badge">{bmi_text}</div></div></div>',unsafe_allow_html=True)
+            with st.container(border=True,key="sleep_habit_card"):
+                section_header("🌙","수면 습관","하루 수면 패턴을 입력해 주세요.","purple")
+                bedtime_col,wake_col=st.columns(2)
+                with bedtime_col:
+                    d_bedtime=st.time_input("취침시간",value=time(23,30),step=timedelta(minutes=15),key="detail_bedtime_input")
+                with wake_col:
+                    d_wake_time=st.time_input("기상시간",value=time(6,30),step=timedelta(minutes=15),key="detail_wake_time_input")
+            with st.container(border=True,key="activity_card"):
+                activity_title_col,activity_input_col=st.columns([1.25,1])
+                with activity_title_col:
+                    section_header("🏃","신체 활동 수준","일반적인 하루 활동량을 입력해 주세요.","green")
+                with activity_input_col:
+                    d_activity=st.number_input("활동 시간 (분/일)",min_value=0,max_value=1440,value=45,step=5,label_visibility="collapsed")
+            with st.container(border=True,key="stress_card"):
+                section_header("🧠","스트레스 지수","평소 스트레스 정도를 1~10단계로 평가해 주세요.","orange")
+                d_stress=st.slider("스트레스 지수 (1~10)",min_value=1,max_value=10,value=5,step=1,label_visibility="collapsed")
+                scale_left,scale_right=st.columns(2)
+                scale_left.caption("1 : 전혀 스트레스 없음")
+                scale_right.markdown('<div class="scale-right">10 : 매우 높은 스트레스</div>',unsafe_allow_html=True)
+        with right_col:
+            with st.container(border=True,key="health_detail_card"):
+                section_header("💙","상세 건강 정보","더 정확한 분석을 위한 건강 정보를 입력해 주세요.","blue")
                 bp_sys_col,bp_dia_col=st.columns(2)
                 with bp_sys_col:
-                    field_label("수축기 혈압 (mmHg)",False)
-                    d_sys=st.number_input("수축기 혈압 (mmHg)",min_value=70,max_value=250,value=None,step=1,placeholder="예: 120",help="혈압계에 크게 표시되는 위쪽 숫자입니다.",label_visibility="collapsed")
+                    d_sys=st.number_input("수축기 혈압 (mmHg)",min_value=50,max_value=250,value=120,step=1)
                 with bp_dia_col:
-                    field_label("이완기 혈압 (mmHg)",False)
-                    d_dia=st.number_input("이완기 혈압 (mmHg)",min_value=40,max_value=150,value=None,step=1,placeholder="예: 80",help="혈압계에 표시되는 아래쪽 숫자입니다.",label_visibility="collapsed")
-                field_label("심박수 (회/분)",False)
-                d_hr=st.number_input("심박수 (회/분)",min_value=40,max_value=200,value=None,step=1,placeholder="안정 시 심박수",help="안정 시 심박수를 입력하세요.",label_visibility="collapsed")
-                field_label("하루 걸음 수",False)
-                d_steps=st.number_input("하루 걸음 수",min_value=0,max_value=50000,value=None,step=500,placeholder="하루 평균 걸음 수",label_visibility="collapsed")
-        with extra_col:
-            st.markdown('<div class="detail-section-title">상세 건강 정보</div>',unsafe_allow_html=True)
-            field_label("신체 활동수준 (분/일)")
-            d_activity=st.number_input("신체 활동수준 (분/일)",min_value=0,max_value=180,value=None,step=5,placeholder="하루 활동 시간을 입력하세요",label_visibility="collapsed")
-            field_label("취침시간 / 기상시간")
-            sleep_scale_start=datetime(2000,1,1,12,0)
-            sleep_scale_end=datetime(2000,1,2,12,0)
-            sleep_range=st.slider(
-                "취침시간 / 기상시간",
-                min_value=sleep_scale_start,
-                max_value=sleep_scale_end,
-                value=(datetime(2000,1,1,23,30),datetime(2000,1,2,6,30)),
-                step=timedelta(minutes=15),
-                format="HH:mm",
-                key="detail_sleep_range_v1",
-                label_visibility="collapsed",
-            )
-            d_bedtime=sleep_range[0].time()
-            d_wake_time=sleep_range[1].time()
-            st.caption(f"취침 {d_bedtime.strftime('%H:%M')}  ·  기상 {d_wake_time.strftime('%H:%M')}")
-            field_label("스트레스 지수 (1~10)")
-            d_stress=st.slider("스트레스 지수 (1~10)",min_value=1,max_value=10,value=5,step=1,label_visibility="collapsed")
-            field_label("하루 카페인 섭취량 (잔)")
-            d_caffeine=st.number_input("하루 카페인 섭취량 (잔)",min_value=0.0,max_value=15.0,value=None,step=.5,placeholder="섭취하지 않으면 0",help="커피·에너지 음료·카페인 차를 합산해 입력하세요.",label_visibility="collapsed")
-            field_label("하루 휴대폰 사용시간 (시간)")
-            d_phone=st.number_input("하루 휴대폰 사용시간 (시간)",min_value=0.0,max_value=24.0,value=None,step=.5,placeholder="사용하지 않으면 0",help="하루 평균 휴대폰 사용시간을 입력하세요.",label_visibility="collapsed")
-            smoking_col,alcohol_col=st.columns(2)
-            with smoking_col:
-                field_label("흡연 여부")
-                d_smoking=st.radio("흡연 여부",["비흡연","흡연"],index=None,horizontal=True,label_visibility="collapsed")
-            with alcohol_col:
-                field_label("최근 24시간 내 음주 여부")
-                d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],index=None,horizontal=True,label_visibility="collapsed")
-            field_label("낮 시간 졸림 정도 (1~10단계)")
-            d_daytime_sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",min_value=1,max_value=10,value=5,step=1,help="1 = 전혀 졸리지 않음, 5 = 가끔 졸림, 10 = 매우 심하게 졸림",label_visibility="collapsed")
-        if st.form_submit_button("분석 시작하기 →",use_container_width=True):
+                    d_dia=st.number_input("이완기 혈압 (mmHg)",min_value=30,max_value=200,value=80,step=1)
+                d_hr=st.number_input("심박수 (회/분)",min_value=30,max_value=220,value=70,step=1)
+                d_steps=st.number_input("하루 걸음 수",min_value=0,max_value=100000,value=7000,step=100)
+                caffeine_col,phone_col=st.columns(2)
+                with caffeine_col:
+                    d_caffeine=st.number_input("하루 카페인 섭취량 (잔)",min_value=0.0,max_value=20.0,value=1.0,step=.5,format="%.2f")
+                with phone_col:
+                    d_phone=st.number_input("하루 휴대폰 사용시간 (시간)",min_value=0.0,max_value=24.0,value=5.0,step=.5,format="%.2f")
+                smoking_col,alcohol_col=st.columns(2)
+                with smoking_col:
+                    d_smoking=st.radio("흡연 여부",["비흡연","흡연"],horizontal=True)
+                with alcohol_col:
+                    d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],horizontal=True)
+            with st.container(border=True,key="sleepiness_card"):
+                section_header("☀️","낮 시간 졸림 정도 (1~10단계)","평소 낮 시간의 졸림 정도를 평가해 주세요.","sky")
+                d_daytime_sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",min_value=1,max_value=10,value=5,step=1,help="1 = 전혀 졸리지 않음, 5 = 가끔 졸림, 10 = 매우 심하게 졸림",label_visibility="collapsed")
+                scale_left,scale_right=st.columns(2)
+                scale_left.caption("1 : 전혀 졸리지 않음")
+                scale_right.markdown('<div class="scale-right">10 : 매우 심하게 졸림</div>',unsafe_allow_html=True)
+        if st.form_submit_button("▥  상세 분석 시작하기 →",use_container_width=True):
             required_values=[
                 ("성별",d_gender),("나이",d_age),("키",d_height),("몸무게",d_weight),
                 ("취침시간",d_bedtime),("기상시간",d_wake_time),("신체 활동수준",d_activity),
@@ -227,7 +470,6 @@ if not st.session_state.analyzed:
             if (d_sys is None)!=(d_dia is None):
                 st.error("혈압을 입력하려면 수축기와 이완기 혈압을 모두 입력해 주세요.")
                 st.stop()
-            # 뒤바꿔 입력한 경우는 각 항목의 범위만으로 걸러지지 않음
             if d_sys is not None and d_dia is not None and d_sys<=d_dia:
                 st.error(f"혈압을 다시 확인해 주세요. 수축기({d_sys})는 이완기({d_dia})보다 높아야 합니다.")
                 st.stop()
