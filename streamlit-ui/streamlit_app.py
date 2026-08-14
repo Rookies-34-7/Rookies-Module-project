@@ -14,6 +14,20 @@ from model_service import (lifestyle_profile, predict_efficiency, predict_lifest
 
 load_dotenv(Path(__file__).with_name(".env"))
 
+def setting(name,default=""):
+    """설정값을 st.secrets -> 환경변수(.env) 순으로 찾습니다.
+
+    로컬에서는 .env를, Streamlit Cloud처럼 .env를 올릴 수 없는 배포 환경에서는
+    secrets를 쓰게 됩니다. secrets 파일이 아예 없으면 st.secrets 접근이 예외를
+    던지므로 감싸 둡니다.
+    """
+    try:
+        if name in st.secrets:
+            return str(st.secrets[name]).strip()
+    except Exception:
+        pass
+    return os.getenv(name,default).strip()
+
 st.set_page_config(page_title="자니(Zzz-ni) 수면 건강 분석", page_icon="🌙", layout="wide")
 
 def load_css(filename):
@@ -98,9 +112,9 @@ def save_and_analyze(data):
 def ask_sleep_coach(prompt):
     st.session_state.messages.append({"role":"user","content":prompt})
     d=st.session_state.get("data",{})
-    api_key=os.getenv("OPENAI_API_KEY","").strip()
+    api_key=setting("OPENAI_API_KEY")
     if not api_key:
-        answer="OpenAI API 키가 아직 설정되지 않았어요. 프로젝트의 .env 파일에 OPENAI_API_KEY를 입력한 뒤 앱을 다시 실행해 주세요."
+        answer="OpenAI API 키가 아직 설정되지 않았어요. 로컬은 .env, 배포 환경은 Secrets에 OPENAI_API_KEY를 넣은 뒤 앱을 다시 실행해 주세요."
     else:
         try:
             health_context=(
@@ -112,7 +126,7 @@ def ask_sleep_coach(prompt):
             )
             client=OpenAI(api_key=api_key)
             response=client.responses.create(
-                model=os.getenv("OPENAI_MODEL","gpt-4.1-mini"),
+                model=setting("OPENAI_MODEL","gpt-4.1-mini"),
                 instructions=("당신은 친절한 한국어 AI 수면 코치입니다. 의료 진단을 내리지 말고, 생활 습관 개선에 도움이 되는 일반적인 정보만 간결하게 안내하세요. 응급 증상이나 심각한 수면장애가 의심되면 의료진 상담을 권하세요. "+health_context),
                 input=[{"role":m["role"],"content":m["content"]} for m in st.session_state.messages[-10:]],
             )
@@ -332,11 +346,8 @@ if not st.session_state.analyzed:
     }
     .scale-right { color:#75839a !important; font-size:11px !important; text-align:right !important; }
     [data-testid="stCaptionContainer"] p { font-size:11px !important; }
-    [data-testid="stSlider"] [role="group"] > div > div:first-child,
-    [data-testid="stSlider"] [role="group"] > div > div:nth-child(2),
-    [data-testid="stRadioOption"] > div > div > div:first-child {
-        filter: hue-rotate(220deg) !important;
-    }
+    /* hue-rotate로 색을 돌리지 않습니다. 슬라이더·라디오는 이미 테마의
+       primaryColor(#2265E5)로 칠해지므로, 회전을 걸면 파랑이 한 번 더 돌아 초록이 됩니다. */
 
     div[data-testid="stFormSubmitButton"] {
         margin-top: 14px !important;
@@ -413,11 +424,15 @@ if not st.session_state.analyzed:
                 st.markdown(f'<div class="bmi-card"><div><div class="bmi-title">BMI</div><div class="bmi-sub">체질량지수</div></div><div class="bmi-value-wrap"><div class="bmi-value">{bmi_value}</div><div class="bmi-badge">{bmi_text}</div></div></div>',unsafe_allow_html=True)
             with st.container(border=True,key="sleep_habit_card"):
                 section_header("🌙","수면 습관","하루 수면 패턴을 입력해 주세요.","purple")
-                bedtime_col,wake_col=st.columns(2)
+                # 야간 각성 횟수는 효율 최종 모델(GradientBoosting)의 필수 입력이라
+                # 폼에서 직접 받습니다. 없으면 효율 예측이 통째로 비활성화됩니다.
+                bedtime_col,wake_col,awake_col=st.columns(3)
                 with bedtime_col:
                     d_bedtime=st.time_input("취침시간",value=time(23,30),step=timedelta(minutes=15),key="detail_bedtime_input")
                 with wake_col:
                     d_wake_time=st.time_input("기상시간",value=time(6,30),step=timedelta(minutes=15),key="detail_wake_time_input")
+                with awake_col:
+                    d_awakenings=st.number_input("밤중 깬 횟수",min_value=0,max_value=10,value=2,step=1,key="detail_night_awakenings",help="자는 동안 잠에서 깬 횟수입니다. 학습 데이터 기준 0~10회, 중앙값 2회.")
             with st.container(border=True,key="activity_card"):
                 activity_title_col,activity_input_col=st.columns([1.25,1])
                 with activity_title_col:
@@ -474,7 +489,7 @@ if not st.session_state.analyzed:
                 st.error(f"혈압을 다시 확인해 주세요. 수축기({d_sys})는 이완기({d_dia})보다 높아야 합니다.")
                 st.stop()
             d_sleep=sleep_duration(d_bedtime,d_wake_time)
-            save_and_analyze({"mode":"상세 폼","gender":d_gender,"age":d_age,"occupation":None,"height":d_height,"weight":d_weight,"bedtime":d_bedtime.strftime("%H:%M"),"wake_time":d_wake_time.strftime("%H:%M"),"sleep":d_sleep,"quality":None,"activity":d_activity,"stress":d_stress,"bmi":d_bmi,"sys":d_sys,"dia":d_dia,"heart_rate":d_hr,"daily_steps":d_steps,"sleep_disorder":"None","caffeine":d_caffeine,"recent_alcohol":d_recent_alcohol,"phone_hours":d_phone,"daytime_sleepiness":d_daytime_sleepiness,"smoking":d_smoking})
+            save_and_analyze({"mode":"상세 폼","gender":d_gender,"age":d_age,"occupation":None,"height":d_height,"weight":d_weight,"bedtime":d_bedtime.strftime("%H:%M"),"wake_time":d_wake_time.strftime("%H:%M"),"sleep":d_sleep,"quality":None,"activity":d_activity,"stress":d_stress,"bmi":d_bmi,"sys":d_sys,"dia":d_dia,"heart_rate":d_hr,"daily_steps":d_steps,"sleep_disorder":"None","caffeine":d_caffeine,"recent_alcohol":d_recent_alcohol,"phone_hours":d_phone,"daytime_sleepiness":d_daytime_sleepiness,"night_awakenings":d_awakenings,"smoking":d_smoking})
 else:
     d=st.session_state.data
     # 화면에 나가는 진단값은 전부 모델에서만 옵니다. 모델이 없거나 입력이 모자라면
@@ -554,6 +569,7 @@ else:
                 ("키",f'{d.get("height",0):g}cm'),("몸무게",f'{d.get("weight",0):g}kg'),
                 ("BMI",f'{d["bmi"]:.1f}'),
                 ("수면 패턴",f'{d["bedtime"]} ~ {d["wake_time"]}'),("자동 계산 수면시간",f'{d["sleep"]}시간'),
+                ("밤중 깬 횟수",f'{d.get("night_awakenings","미입력")}회'),
                 ("신체 활동수준",f'{d["activity"]}분/일'),("스트레스 지수",f'{d["stress"]}/10'),
                 ("혈압",blood_pressure_text),("심박수",heart_rate_text),
                 ("하루 걸음 수",daily_steps_text),("하루 카페인 섭취량",f'{d["caffeine"]:g}잔'),
