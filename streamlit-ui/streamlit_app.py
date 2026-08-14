@@ -141,75 +141,98 @@ def status_metric(container,label,value,status,tone="good"):
     container.markdown(f'<div class="card"><div class="card-label">{label}</div><div class="card-value">{value}</div><span class="pill pill-{tone}">{status}</span></div>',unsafe_allow_html=True)
 
 if not st.session_state.analyzed:
-    st.markdown('<div class="eyebrow">AI SLEEP HEALTH ANALYSIS</div><div class="hero">당신의 수면을<br><span class="blue">측정해 드립니다.</span></div><div class="sub">간단 측정 또는 상세 측정에서 데이터를 입력해주세요.</div>',unsafe_allow_html=True)
-    simple_tab,detail_tab=st.tabs(["간단 측정","상세 측정"])
-    with simple_tab:
-        st.markdown('<div class="form-title">핵심 생활 습관 입력</div>',unsafe_allow_html=True)
-        # 키와 몸무게는 폼 밖에서 받아 BMI가 입력 즉시 갱신되게 합니다.
-        hc,wc=st.columns(2)
-        height=hc.number_input("키 (cm)",120.0,220.0,170.0,.5,key="simple_height")
-        weight=wc.number_input("몸무게 (kg)",30.0,200.0,65.0,.5,key="simple_weight")
-        bmi=round(weight/((height/100)**2),1)
-        st.markdown(f'<div class="bmi">BMI: {bmi}</div>',unsafe_allow_html=True)
-        with st.form("simple_form"):
-            c1,c2=st.columns(2)
-            age=c1.number_input("나이",18,100,32)
-            gender=c2.selectbox("성별",["Female","Male"])
-            c3,c4=st.columns(2)
-            bedtime=c3.time_input("취침시간",value=time(23,30))
-            wake_time=c4.time_input("기상시간",value=time(6,30))
-            activity=st.number_input("신체 활동수준 (분/일)",0,240,45,5)
-            # 아래 항목은 효율 모델의 필수 입력입니다. 예전엔 코드에 값을 박아 넣었는데,
-            # 사용자가 주지 않은 값을 지어내는 셈이라 직접 받도록 바꿨습니다.
-            c5,c6=st.columns(2)
-            phone=c5.number_input("하루 휴대폰 사용시간 (시간)",0.0,24.0,5.0,.5,key="simple_phone")
-            caffeine=c6.number_input("하루 카페인 섭취량 (잔)",0.0,15.0,1.0,.5,key="simple_caffeine")
-            stress=st.slider("스트레스 지수",1,10,6)
-            sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",1,10,5,key="simple_sleepiness",help="시간이 아니라 정도를 뜻합니다. 1 = 전혀 졸리지 않음, 10 = 매우 심하게 졸림")
-            c7,c8=st.columns(2)
-            smoking=c7.radio("흡연 여부",["비흡연","흡연"],horizontal=True,key="simple_smoking")
-            recent_alcohol=c8.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],horizontal=True,key="simple_alcohol")
-            if st.form_submit_button("간단 분석 시작하기 →",use_container_width=True):
-                sleep=sleep_duration(bedtime,wake_time)
-                save_and_analyze({"mode":"간단 측정","gender":gender,"age":age,"bedtime":bedtime.strftime("%H:%M"),"wake_time":wake_time.strftime("%H:%M"),"sleep":sleep,"quality":None,"activity":activity,"stress":stress,"bmi":bmi,"sys":120,"dia":80,"heart_rate":None,"daily_steps":None,"occupation":None,"sleep_disorder":"None","caffeine":caffeine,"recent_alcohol":recent_alcohol,"smoking":smoking,"phone_hours":phone,"daytime_sleepiness":sleepiness})
-    with detail_tab:
-        st.markdown('<div class="form-title">상세 측정</div>',unsafe_allow_html=True)
-        with st.form("detail_form"):
-            basic_col,extra_col=st.columns(2,gap="large")
-            with basic_col:
-                st.markdown('<div class="detail-section-title">기본 정보</div>',unsafe_allow_html=True)
-                d_gender=st.selectbox("성별",["Female","Male"],format_func=lambda x:{"Female":"여성","Male":"남성"}[x])
-                d_age=st.number_input("나이",18,100,32)
-                height_col,weight_col=st.columns(2)
-                d_height=height_col.number_input("키 (cm)",120.0,220.0,170.0,.5,key="detail_height")
-                d_weight=weight_col.number_input("몸무게 (kg)",30.0,200.0,65.0,.5,key="detail_weight")
-                d_bmi=round(d_weight/((d_height/100)**2),1)
-                st.markdown(f'<div class="bmi">BMI: {d_bmi}</div>',unsafe_allow_html=True)
-                d_bedtime=st.time_input("취침시간",value=time(23,30),key="detail_bedtime")
-                d_wake_time=st.time_input("기상시간",value=time(6,30),key="detail_wake_time")
-                d_activity=st.number_input("신체 활동수준 (분/일)",0,180,45,5)
-                d_stress=st.slider("스트레스 지수",1,10,5)
-            with extra_col:
-                st.markdown('<div class="detail-section-title">상세 건강 정보</div>',unsafe_allow_html=True)
-                # 자유 텍스트였을 때 파싱 실패가 조용히 120/80으로 대체돼 숫자 입력으로 교체
+    st.markdown('<div class="eyebrow">AI SLEEP HEALTH ANALYSIS</div><div class="hero">당신의 수면을<br><span class="blue">측정해 드립니다.</span></div><div class="sub">필수 항목을 모두 입력하면 수면 건강 분석을 시작할 수 있어요.</div>',unsafe_allow_html=True)
+    st.markdown('<div class="form-title">수면 건강 측정</div>',unsafe_allow_html=True)
+
+    def field_label(text,required=True):
+        star='<span style="color:#e5484d;font-weight:900">*</span>' if required else '<span style="color:#758797;font-size:.82rem;font-weight:600">(선택)</span>'
+        st.markdown(f'<div style="font-size:1rem;font-weight:700;margin:.2rem 0 .35rem">{text} {star}</div>',unsafe_allow_html=True)
+
+    with st.form("sleep_health_form"):
+        basic_col,extra_col=st.columns(2,gap="large")
+        with basic_col:
+            st.markdown('<div class="detail-section-title">기본 정보</div>',unsafe_allow_html=True)
+            field_label("성별")
+            d_gender=st.selectbox("성별",["Female","Male"],index=None,placeholder="성별을 선택하세요",format_func=lambda x:{"Female":"여성","Male":"남성"}[x],label_visibility="collapsed")
+            field_label("나이")
+            d_age=st.number_input("나이",min_value=18,max_value=100,value=None,step=1,placeholder="나이를 입력하세요",label_visibility="collapsed")
+            height_col,weight_col=st.columns(2)
+            with height_col:
+                field_label("키 (cm)")
+                d_height=st.number_input("키 (cm)",min_value=120.0,max_value=220.0,value=None,step=.5,placeholder="키",key="detail_height",label_visibility="collapsed")
+            with weight_col:
+                field_label("몸무게 (kg)")
+                d_weight=st.number_input("몸무게 (kg)",min_value=30.0,max_value=200.0,value=None,step=.5,placeholder="몸무게",key="detail_weight",label_visibility="collapsed")
+            d_bmi=round(d_weight/((d_height/100)**2),1) if d_height is not None and d_weight is not None else None
+            st.markdown('<div style="height:20px"></div>',unsafe_allow_html=True)
+            with st.expander("선택 입력 항목  ·  혈압, 심박수, 하루 걸음 수"):
+                st.caption("알고 있는 항목만 입력해 주세요. 입력하지 않아도 분석할 수 있습니다.")
                 bp_sys_col,bp_dia_col=st.columns(2)
-                d_sys=bp_sys_col.number_input("수축기 혈압 (mmHg)",70,250,120,help="혈압계에 크게 표시되는 위쪽 숫자입니다. 예: 120/80의 120")
-                d_dia=bp_dia_col.number_input("이완기 혈압 (mmHg)",40,150,80,help="아래쪽 숫자입니다. 예: 120/80의 80")
-                d_hr=st.number_input("심박수 (회/분)",40,200,70,help="안정 시 심박수를 입력하세요.")
-                d_steps=st.number_input("하루 걸음 수",0,50000,7000,500)
-                d_caffeine=st.number_input("하루 카페인 섭취량 (잔)",0.0,15.0,1.0,.5,help="커피·에너지 음료·카페인 차를 합산해 입력하세요.")
-                d_phone=st.number_input("하루 휴대폰 사용시간 (시간)",0.0,24.0,5.0,.5,help="하루 평균 휴대폰 사용시간을 입력하세요.")
-                d_smoking=st.radio("흡연 여부",["비흡연","흡연"],horizontal=True)
-                d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],horizontal=True)
-                # 시간이 아닌 1~10 척도. 학습 데이터에도 0은 없어 범위 유지, 문구만 명확화
-                d_daytime_sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",1,10,5,help="시간이 아니라 정도를 뜻합니다. 1 = 전혀 졸리지 않음, 5 = 가끔 졸림, 10 = 매우 심하게 졸림")
-            if st.form_submit_button("상세 분석 시작하기 →",use_container_width=True):
-                # 뒤바꿔 입력한 경우는 각 항목의 범위만으로 걸러지지 않음
-                if d_sys<=d_dia:
-                    st.error(f"혈압을 다시 확인해 주세요. 수축기({d_sys})는 이완기({d_dia})보다 높아야 합니다. 두 값을 바꿔 입력하신 것 같습니다.")
-                    st.stop()
-                d_sleep=sleep_duration(d_bedtime,d_wake_time)
-                save_and_analyze({"mode":"상세 폼","gender":d_gender,"age":d_age,"occupation":None,"height":d_height,"weight":d_weight,"bedtime":d_bedtime.strftime("%H:%M"),"wake_time":d_wake_time.strftime("%H:%M"),"sleep":d_sleep,"quality":None,"activity":d_activity,"stress":d_stress,"bmi":d_bmi,"sys":d_sys,"dia":d_dia,"heart_rate":d_hr,"daily_steps":d_steps,"sleep_disorder":"None","caffeine":d_caffeine,"recent_alcohol":d_recent_alcohol,"phone_hours":d_phone,"daytime_sleepiness":d_daytime_sleepiness,"smoking":d_smoking})
+                with bp_sys_col:
+                    field_label("수축기 혈압 (mmHg)",False)
+                    d_sys=st.number_input("수축기 혈압 (mmHg)",min_value=70,max_value=250,value=None,step=1,placeholder="예: 120",help="혈압계에 크게 표시되는 위쪽 숫자입니다.",label_visibility="collapsed")
+                with bp_dia_col:
+                    field_label("이완기 혈압 (mmHg)",False)
+                    d_dia=st.number_input("이완기 혈압 (mmHg)",min_value=40,max_value=150,value=None,step=1,placeholder="예: 80",help="혈압계에 표시되는 아래쪽 숫자입니다.",label_visibility="collapsed")
+                field_label("심박수 (회/분)",False)
+                d_hr=st.number_input("심박수 (회/분)",min_value=40,max_value=200,value=None,step=1,placeholder="안정 시 심박수",help="안정 시 심박수를 입력하세요.",label_visibility="collapsed")
+                field_label("하루 걸음 수",False)
+                d_steps=st.number_input("하루 걸음 수",min_value=0,max_value=50000,value=None,step=500,placeholder="하루 평균 걸음 수",label_visibility="collapsed")
+        with extra_col:
+            st.markdown('<div class="detail-section-title">상세 건강 정보</div>',unsafe_allow_html=True)
+            field_label("신체 활동수준 (분/일)")
+            d_activity=st.number_input("신체 활동수준 (분/일)",min_value=0,max_value=180,value=None,step=5,placeholder="하루 활동 시간을 입력하세요",label_visibility="collapsed")
+            field_label("취침시간 / 기상시간")
+            sleep_scale_start=datetime(2000,1,1,12,0)
+            sleep_scale_end=datetime(2000,1,2,12,0)
+            sleep_range=st.slider(
+                "취침시간 / 기상시간",
+                min_value=sleep_scale_start,
+                max_value=sleep_scale_end,
+                value=(datetime(2000,1,1,23,30),datetime(2000,1,2,6,30)),
+                step=timedelta(minutes=15),
+                format="HH:mm",
+                key="detail_sleep_range_v1",
+                label_visibility="collapsed",
+            )
+            d_bedtime=sleep_range[0].time()
+            d_wake_time=sleep_range[1].time()
+            st.caption(f"취침 {d_bedtime.strftime('%H:%M')}  ·  기상 {d_wake_time.strftime('%H:%M')}")
+            field_label("스트레스 지수 (1~10)")
+            d_stress=st.slider("스트레스 지수 (1~10)",min_value=1,max_value=10,value=5,step=1,label_visibility="collapsed")
+            field_label("하루 카페인 섭취량 (잔)")
+            d_caffeine=st.number_input("하루 카페인 섭취량 (잔)",min_value=0.0,max_value=15.0,value=None,step=.5,placeholder="섭취하지 않으면 0",help="커피·에너지 음료·카페인 차를 합산해 입력하세요.",label_visibility="collapsed")
+            field_label("하루 휴대폰 사용시간 (시간)")
+            d_phone=st.number_input("하루 휴대폰 사용시간 (시간)",min_value=0.0,max_value=24.0,value=None,step=.5,placeholder="사용하지 않으면 0",help="하루 평균 휴대폰 사용시간을 입력하세요.",label_visibility="collapsed")
+            smoking_col,alcohol_col=st.columns(2)
+            with smoking_col:
+                field_label("흡연 여부")
+                d_smoking=st.radio("흡연 여부",["비흡연","흡연"],index=None,horizontal=True,label_visibility="collapsed")
+            with alcohol_col:
+                field_label("최근 24시간 내 음주 여부")
+                d_recent_alcohol=st.radio("최근 24시간 내 음주 여부",["음주 안 함","음주함"],index=None,horizontal=True,label_visibility="collapsed")
+            field_label("낮 시간 졸림 정도 (1~10단계)")
+            d_daytime_sleepiness=st.slider("낮 시간 졸림 정도 (1~10단계)",min_value=1,max_value=10,value=5,step=1,help="1 = 전혀 졸리지 않음, 5 = 가끔 졸림, 10 = 매우 심하게 졸림",label_visibility="collapsed")
+        if st.form_submit_button("분석 시작하기 →",use_container_width=True):
+            required_values=[
+                ("성별",d_gender),("나이",d_age),("키",d_height),("몸무게",d_weight),
+                ("취침시간",d_bedtime),("기상시간",d_wake_time),("신체 활동수준",d_activity),
+                ("스트레스 지수",d_stress),("카페인 섭취량",d_caffeine),("휴대폰 사용시간",d_phone),
+                ("흡연 여부",d_smoking),("음주 여부",d_recent_alcohol),("낮 시간 졸림 정도",d_daytime_sleepiness),
+            ]
+            missing=[label for label,value in required_values if value is None]
+            if missing:
+                st.error("필수 입력값을 모두 입력해 주세요: " + ", ".join(missing))
+                st.stop()
+            if (d_sys is None)!=(d_dia is None):
+                st.error("혈압을 입력하려면 수축기와 이완기 혈압을 모두 입력해 주세요.")
+                st.stop()
+            # 뒤바꿔 입력한 경우는 각 항목의 범위만으로 걸러지지 않음
+            if d_sys is not None and d_dia is not None and d_sys<=d_dia:
+                st.error(f"혈압을 다시 확인해 주세요. 수축기({d_sys})는 이완기({d_dia})보다 높아야 합니다.")
+                st.stop()
+            d_sleep=sleep_duration(d_bedtime,d_wake_time)
+            save_and_analyze({"mode":"상세 폼","gender":d_gender,"age":d_age,"occupation":None,"height":d_height,"weight":d_weight,"bedtime":d_bedtime.strftime("%H:%M"),"wake_time":d_wake_time.strftime("%H:%M"),"sleep":d_sleep,"quality":None,"activity":d_activity,"stress":d_stress,"bmi":d_bmi,"sys":d_sys,"dia":d_dia,"heart_rate":d_hr,"daily_steps":d_steps,"sleep_disorder":"None","caffeine":d_caffeine,"recent_alcohol":d_recent_alcohol,"phone_hours":d_phone,"daytime_sleepiness":d_daytime_sleepiness,"smoking":d_smoking})
 else:
     d=st.session_state.data
     # 화면에 나가는 진단값은 전부 모델에서만 옵니다. 모델이 없거나 입력이 모자라면
@@ -263,7 +286,7 @@ else:
             st.markdown(f'<div class="verdict verdict-{verdict["tone"]}"><span>{verdict["icon"]}</span><span>{verdict["text"]}</span></div>',unsafe_allow_html=True)
             st.markdown(f'<div class="verdict-note">수면의 질 예측 모델 · 확신도 {max(verdict["proba"].values()):.0%}</div>',unsafe_allow_html=True)
         else:
-            st.markdown('<div class="pending pending-verdict"><div class="pending-body">수면의 질 모델은 심박수·혈압·걸음 수가 필요합니다.<br>상세 측정으로 입력해 주세요.</div></div>',unsafe_allow_html=True)
+            st.markdown('<div class="pending pending-verdict"><div class="pending-body">수면의 질 모델에는 선택 항목인<br>심박수·혈압·걸음 수가 필요합니다.</div></div>',unsafe_allow_html=True)
     st.markdown('<div style="height:28px"></div>',unsafe_allow_html=True)
     a,b,c=st.columns(3)
     status_metric(a,"수면 시간",f"{d['sleep']}시간","권장보다 짧음" if d['sleep']<7 else "적정 범위","warn" if d['sleep']<7 else "good")
@@ -280,14 +303,18 @@ else:
         status_metric(c5,"최근 24시간 내 음주",d['recent_alcohol'],"수면 영향 가능" if d['recent_alcohol']=="음주함" else "음주 없음","warn" if d['recent_alcohol']=="음주함" else "good")
     if d["mode"]=="상세 폼":
         with st.expander("입력한 상세 데이터 확인"):
+            # 혈압·심박수·걸음 수는 선택 항목이라 비어 있을 수 있습니다.
+            blood_pressure_text=f'{d["sys"]}/{d["dia"]} mmHg' if d["sys"] is not None and d["dia"] is not None else "미입력"
+            heart_rate_text=f'{d["heart_rate"]}회/분' if d["heart_rate"] is not None else "미입력"
+            daily_steps_text=f'{d["daily_steps"]:,}걸음' if d["daily_steps"] is not None else "미입력"
             details=[
                 ("성별","여성" if d["gender"]=="Female" else "남성"),("나이",f'{d["age"]}세'),
                 ("키",f'{d.get("height",0):g}cm'),("몸무게",f'{d.get("weight",0):g}kg'),
                 ("BMI",f'{d["bmi"]:.1f}'),
                 ("수면 패턴",f'{d["bedtime"]} ~ {d["wake_time"]}'),("자동 계산 수면시간",f'{d["sleep"]}시간'),
                 ("신체 활동수준",f'{d["activity"]}분/일'),("스트레스 지수",f'{d["stress"]}/10'),
-                ("혈압",f'{d["sys"]}/{d["dia"]} mmHg'),("심박수",f'{d["heart_rate"]}회/분'),
-                ("하루 걸음 수",f'{d["daily_steps"]:,}걸음'),("하루 카페인 섭취량",f'{d["caffeine"]:g}잔'),
+                ("혈압",blood_pressure_text),("심박수",heart_rate_text),
+                ("하루 걸음 수",daily_steps_text),("하루 카페인 섭취량",f'{d["caffeine"]:g}잔'),
                 ("최근 24시간 내 음주 여부",d["recent_alcohol"]),("하루 휴대폰 사용시간",f'{d.get("phone_hours",0):g}시간'),
                 ("낮 시간 졸림 정도",f'{d.get("daytime_sleepiness",0)}/10'),("흡연 여부",d["smoking"]),
             ]
