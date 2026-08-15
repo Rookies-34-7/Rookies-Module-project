@@ -18,7 +18,7 @@ html,body,[class*="css"],[data-testid="stAppViewContainer"]{font-family:'Pretend
 html,body{overflow:auto!important}
 [data-testid="stAppViewContainer"]{background:var(--bg)}
 [data-testid="stHeader"]{background:rgba(247,250,249,.86)}
-.block-container{max-width:1060px;padding-top:2.25rem;padding-bottom:5rem}
+.block-container{max-width:1400px;padding-top:2.25rem;padding-bottom:5rem}
 h1,h2,h3{letter-spacing:-.045em!important}
 
 /* ── 헤더 / 타이포 ──────────────────────────────────── */
@@ -29,15 +29,33 @@ h1,h2,h3{letter-spacing:-.045em!important}
 .hero{font-size:3.35rem;line-height:1.1;font-weight:800;letter-spacing:-.065em;margin-bottom:1rem}
 .sub{color:var(--ink2);font-size:1.05rem;line-height:1.7;max-width:700px;margin-bottom:1.75rem}
 .form-title{font-size:1.4rem;font-weight:800;letter-spacing:-.035em;margin:.4rem 0 1.3rem}
+.form-guide{font-size:.92rem;color:var(--muted);margin:-.9rem 0 1.25rem}
+.section-title{font-size:1.22rem;font-weight:800;color:#13294b;margin-bottom:2px;letter-spacing:-.025em}
+.section-desc{font-size:.84rem;color:#75839a;margin-bottom:10px;padding-left:2rem}
 .detail-section-title{font-size:1.08rem;font-weight:800;color:#214f83;margin:.1rem 0 1rem;padding:.7rem .9rem;border-radius:10px;background:rgba(222,236,252,.78);border:1px solid #d2e2f2}
 .notice{font-size:.85rem;line-height:1.6;color:#4f6270;background:#eef4f5;padding:.9rem 1.1rem;border-radius:10px;margin-top:1rem}
 .foot{margin-top:64px;padding:24px 0 8px;border-top:1px solid var(--line);text-align:center;color:#5c6f79;font-size:.88rem;font-weight:600}
 
 /* ── 입력 폼 ────────────────────────────────────────── */
 [data-testid="stWidgetLabel"] p,label[data-testid="stWidgetLabel"] p{font-size:1rem!important;font-weight:650!important;line-height:1.45!important}
+.form-card-head{padding:.08rem 0 .7rem;border-bottom:1px solid var(--line2);margin-bottom:.85rem}
+.form-card-title{display:flex;align-items:center;gap:.52rem;font-size:1.18rem;font-weight:800;letter-spacing:-.025em;color:#13294b}
+.form-card-icon{width:32px;height:32px;display:inline-grid;place-items:center;border-radius:50%;font-size:1rem;font-family:'Segoe UI Emoji','Apple Color Emoji',sans-serif}
+.icon-blue{background:#e8f0ff;color:#2563eb}.icon-purple{background:#eee9ff;color:#7456ef}.icon-green{background:#e2f7ef;color:#17976a}.icon-orange{background:#fff0df;color:#ef7b2d}.icon-sky{background:#e5f2ff;color:#2985df}
+.form-card-desc{font-size:.86rem;color:#75839a;line-height:1.45;margin:.24rem 0 0 2.58rem}
+.form-gap{height:14px}
+.st-key-basic_info_card,.st-key-sleep_habit_card,.st-key-activity_card,.st-key-stress_card,.st-key-health_detail_card,.st-key-sleepiness_card{background:rgba(255,255,255,.94);border-radius:18px;box-shadow:0 5px 18px rgba(20,50,100,.06);margin-bottom:.85rem}
+[data-testid="stVerticalBlockBorderWrapper"]{border-color:rgba(190,205,225,.65)!important;border-radius:18px!important;padding:12px 16px!important}
+[data-testid="stExpander"]{background:rgba(255,255,255,.94);border-color:rgba(190,205,225,.65)!important;border-radius:14px!important;margin-bottom:.85rem;box-shadow:0 5px 18px rgba(20,50,100,.05)}
+.scale-right{text-align:right;color:#75839a;font-size:.86rem;padding-top:.15rem}
+.submit-gap{height:10px}
 .bmi{background:#eaf1ff;border:1px solid #c8d9fc;color:var(--blue-dark);border-radius:12px;padding:1rem 1.2rem;margin:.5rem 0 1rem;font-size:1.05rem;font-weight:700}
-.stButton>button,.stFormSubmitButton>button{border-radius:10px;font-size:1.02rem;font-weight:700;border:0;background:var(--blue);color:#fff;min-height:3.1rem}
-.stButton>button:hover,.stFormSubmitButton>button:hover{background:var(--blue-dark);color:#fff;border:0}
+.bmi-card{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,rgba(231,241,255,.98),rgba(244,249,255,.98));border:1px solid #b8d1ff;border-radius:12px;padding:8px 14px;margin-top:7px;min-height:52px}
+.bmi-title{font-size:.92rem;font-weight:800;color:#174ea6;line-height:1.15}.bmi-sub{font-size:.68rem;color:#718096;margin-top:.06rem;line-height:1.15}
+.bmi-value-wrap{display:flex;align-items:center;gap:9px}.bmi-value{font-size:1.5rem;font-weight:850;color:#2563eb;line-height:1}.bmi-badge{padding:4px 8px;border-radius:999px;background:#dff7e8;color:#238a4b;font-size:.68rem;font-weight:700;white-space:nowrap}
+.st-key-health_detail_card{min-height:470px}
+.stButton>button,.stFormSubmitButton>button{border-radius:14px;font-size:1.08rem;font-weight:750;border:0;background:linear-gradient(90deg,#2563eb,#3087e8);color:#fff;min-height:3.6rem;box-shadow:0 8px 20px rgba(37,99,235,.2)}
+.stButton>button:hover,.stFormSubmitButton>button:hover{background:linear-gradient(90deg,#1d4ed8,#2575d9);color:#fff;border:0}
 /* 탭 라벨이 기본값에선 너무 작아 크기와 대비를 올립니다. */
 [data-baseweb="tab"]{font-size:1.02rem!important}
 [data-baseweb="tab"] p{font-size:1.02rem!important;font-weight:700!important;color:var(--muted)}
@@ -47,7 +65,26 @@ h1,h2,h3{letter-spacing:-.045em!important}
 .verdict-label{font-size:1rem;font-weight:700;color:var(--muted);margin:.2rem 0 .55rem}
 .verdict{border-radius:16px;padding:1.15rem 1.2rem;display:flex;align-items:center;justify-content:center;gap:.55rem;font-size:2.4rem;font-weight:800;letter-spacing:-.05em;line-height:1.2}
 .verdict-good{background:#e7f8f0;border:1px solid #b9e6d3;color:#0f7a58}
+.verdict-warn{background:#fff8e1;border:1px solid #f0dca0;color:#8a5a00}
 .verdict-bad{background:#fdecec;border:1px solid #f3c6c6;color:#b53232}
+.verdict-note{font-size:.82rem;color:var(--muted);text-align:center;margin-top:.5rem}
+/* 모델이 없거나 입력이 모자랄 때. 임의 수식으로 채우지 않고 이 안내를 대신 띄웁니다. */
+.pending{background:#f4f7f9;border:1px dashed #c5d3dc;border-radius:16px;padding:1.6rem 1.4rem;text-align:center}
+.pending-title{font-size:1.15rem;font-weight:800;color:var(--ink);margin-bottom:.6rem}
+.pending-body{font-size:.92rem;line-height:1.65;color:var(--muted)}
+.pending-verdict{padding:1.1rem 1.2rem}
+/* 나의 수면 분석 — 모델 3개 결과 요약 */
+.summary-title{font-size:1.45rem;font-weight:800;letter-spacing:-.04em;margin:.6rem 0 1rem}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem}
+.tile{background:#fff;border:1px solid var(--line);border-left-width:5px;border-radius:16px;padding:1.2rem 1.3rem;box-shadow:0 1px 2px rgba(20,40,58,.04)}
+.tile-label{font-size:.95rem;font-weight:600;color:var(--muted)}
+.tile-value{font-size:2.1rem;font-weight:800;letter-spacing:-.045em;line-height:1.2;margin:.35rem 0 .3rem;font-variant-numeric:tabular-nums}
+.tile-unit{font-size:1.1rem;font-weight:700;color:var(--muted)}
+.tile-caption{font-size:.88rem;color:var(--muted)}
+.tile-good{border-left-color:#0f7a58}.tile-good .tile-value{color:#0f7a58}
+.tile-warn{border-left-color:#8a5a00}.tile-warn .tile-value{color:#8a5a00}
+.tile-bad{border-left-color:#b53232}.tile-bad .tile-value{color:#b53232}
+.tile-idle{border-left-color:#c5d3dc}.tile-idle .tile-value{color:var(--muted)}
 
 /* ── 결과: 지표 카드 ────────────────────────────────────
    라벨 → 수치 → 상태 3단 위계. 배지는 margin-top:auto라 카드 높이가 달라도 아래쪽에 정렬됩니다. */
@@ -150,7 +187,7 @@ div[data-testid="stDialog"]>div:first-child{margin-left:auto;margin-right:1.5rem
   left:14px!important;
   bottom:14px!important;
   z-index:99990!important;
-  width:116px!important;
+  width:136px!important;
   height:32px!important;
   margin:0!important;
   padding:1px 5px!important;
@@ -160,7 +197,7 @@ div[data-testid="stDialog"]>div:first-child{margin-left:auto;margin-right:1.5rem
   background:rgba(9,22,48,.62)!important;
   box-shadow:0 7px 20px rgba(0,0,0,.2)!important;
 }
-.st-key-bgm_player iframe{display:block!important;width:106px!important;height:30px!important;border:0!important}
+.st-key-bgm_player iframe{display:block!important;width:126px!important;height:30px!important;border:0!important}
 
 /* ── 화면 고정형 AI 수면 코치 ──────────────────────────
    backdrop-filter가 fixed 요소의 기준을 폼으로 바꾸지 않도록 해제합니다. */

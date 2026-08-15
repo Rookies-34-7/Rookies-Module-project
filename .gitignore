@@ -1,7 +1,12 @@
-.venv/ 
-.vscode/ 
+.venv/
+.vscode/
 .env
 .DS_Store
 
+# 파이썬 캐시 (커밋되면 배포 환경에서 stale 바이트코드로 꼬일 수 있음)
+__pycache__/
+*.py[cod]
 
-venv/
+# 배포 비밀값. 예시 파일(secrets.toml.example)만 저장소에 둡니다.
+.streamlit/secrets.toml
+streamlit-ui/.streamlit/secrets.toml
