@@ -87,7 +87,7 @@ FIELD_SOURCES = {
     "diastolicbp":             lambda d: d.get("dia"),
     "screentimehours":         lambda d: d.get("phone_hours"),
     "daytimesleepiness":       lambda d: d.get("daytime_sleepiness"),
-    "nightawakenings":         lambda d: d.get("night_awakenings"),
+    "nightawakenings":         lambda d: d.get("night_awakenings"),UI
     "caffeineintakemg":        lambda d: None if d.get("caffeine") is None else d["caffeine"] * MG_PER_CUP,
     "smokingstatus":           lambda d: {"흡연": "Yes", "비흡연": "No"}.get(d.get("smoking")),
     "alcoholconsumption":      lambda d: {"음주함": "Yes", "음주 안 함": "No"}.get(d.get("recent_alcohol")),

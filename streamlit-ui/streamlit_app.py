@@ -75,6 +75,12 @@ if st.session_state.get("chat_state_version")!="closed_by_default_v1":
     st.session_state.chat_state_version="closed_by_default_v1"
 st.markdown('<div class="brand"><span class="mark">✦</span><span>자니<span class="blue">(Zzz-ni)</span></span></div>',unsafe_allow_html=True)
 
+# def bmi_category(bmi):
+#     if bmi < 18.5: return "Underweight"
+#     if bmi < 25: return "Normal"
+#     if bmi < 30: return "Overweight"
+#     return "Obese"
+
 def sleep_duration(bedtime,wake_time):
     base=datetime(2000,1,1)
     start=datetime.combine(base.date(),bedtime)
@@ -102,6 +108,37 @@ def save_and_analyze(data):
     st.session_state.analyzed=True
     st.rerun()
 
+TRUSTED_SLEEP_DOMAINS = [
+    "health.kdca.go.kr",    #질병관리청 국가건강정보포털
+    "mentalhealth.go.kr",   #국가정신건강정보포털
+    "snuh.org",             #서울대학교병원
+    "amc.seoul.kr",         #서울아산병원
+    "sleepnet.or.kr"        #대한수면연구학회
+]
+
+WEB_SEARCH_TOOL = {
+    "type": "web_search",
+    "filters": {
+        "allowed_domains": TRUSTED_SLEEP_DOMAINS
+    }
+}
+
+GUIDE_INSTRUCTION = """
+당신은 친절한 한국어 AI 수면 코치입니다. 의료 진단을 내리지 말고, 
+생활 습관 개선에 도움이 되는 일반적인 정보만 간결하게 안내하세요. 
+응급 증상이나 심각한 수면장애가 의심되면 의료진 상담을 권하세요.
+수면과 관련 없는 질문이 들어오면 대답할 수 없다고 말하세요.
+
+웹 검색 시 다음 원칙을 따릅니다.
+
+1. 허용된 의료·공공기관 사이트의 자료만 사용한다.
+2. 수면 습관 및 생활습관 개선과 직접 관련된 자료를 우선한다.
+3. 가능하면 최신 자료를 우선한다.
+4. 근거가 불명확하면 확정적으로 표현하지 않는다.
+5. 질병을 진단하거나 약물을 추천하지 않는다.
+6. 검색한 근거와 사용자의 머신러닝 분석 결과를 구분해서 설명한다.
+"""
+
 def ask_sleep_coach(prompt):
     st.session_state.messages.append({"role":"user","content":prompt})
     d=st.session_state.get("data",{})
@@ -119,8 +156,8 @@ def ask_sleep_coach(prompt):
             )
             client=OpenAI(api_key=api_key)
             response=client.responses.create(
-                model=setting("OPENAI_MODEL","gpt-4.1-mini"),
-                instructions=("당신은 친절한 한국어 AI 수면 코치입니다. 의료 진단을 내리지 말고, 생활 습관 개선에 도움이 되는 일반적인 정보만 간결하게 안내하세요. 응급 증상이나 심각한 수면장애가 의심되면 의료진 상담을 권하세요. "+health_context),
+                model=os.getenv("OPENAI_MODEL","gpt-4.1-mini"),
+                instructions=(GUIDE_INSTRUCTION + health_context),
                 input=[{"role":m["role"],"content":m["content"]} for m in st.session_state.messages[-10:]],
             )
             answer=response.output_text or "답변을 생성하지 못했어요. 잠시 후 다시 시도해 주세요."
@@ -145,7 +182,60 @@ def lifestyle_radar(d):
     return fig
 
 def status_metric(container,label,value,status,tone="good"):
-    container.markdown(f'<div class="card"><div class="card-label">{label}</div><div class="card-value">{value}</div><span class="pill pill-{tone}">{status}</span></div>',unsafe_allow_html=True)
+    idle_style=' style="color:#607483;background:#eef3f6"' if tone=="idle" else ""
+    container.markdown(f'<div class="card"><div class="card-label">{label}</div><div class="card-value">{value}</div><span class="pill pill-{tone}"{idle_style}>{status}</span></div>',unsafe_allow_html=True)
+
+def level_label(tone):
+    return {"good":"양호","warn":"보통","bad":"위험"}[tone]
+
+def sleep_level(hours,age):
+    # Canadian 24-Hour Movement Guidelines: 18~64세 7~9시간대, 65세 이상 7~8시간대.
+    upper=9 if age >= 65 else 10
+    if 7 <= hours < upper: return "good"
+    if 6 <= hours < upper+1: return "warn"
+    return "bad"
+
+def stress_level(score):
+    # 학습 데이터의 Low / Medium / High 변환 경계와 동일하게 유지합니다.
+    if score <= 4: return "good"
+    if score <= 7: return "warn"
+    return "bad"
+
+def bmi_level(bmi):
+    # 대한비만학회: 정상 18.5~22.9, 비만전단계 23~24.9, 비만 25 이상.
+    if 18.5 <= bmi < 23: return "good"
+    if bmi < 25: return "warn"
+    return "bad"
+
+def activity_level(minutes):
+    # WHO 성인 권고 150분/주를 일평균으로 환산한 약 22분을 기준으로 사용합니다.
+    if minutes >= 22: return "good"
+    if minutes > 0: return "warn"
+    return "bad"
+
+def blood_pressure_level(sys,dia):
+    # 저혈압 범위는 한 번의 측정만으로 위험 판정하지 않고 '보통'으로 안내합니다.
+    if sys < 90 or dia < 60: return "warn"
+    if sys < 120 and dia < 80: return "good"
+    if sys < 140 and dia < 90: return "warn"
+    return "bad"
+
+def heart_rate_level(rate):
+    if 60 <= rate <= 100: return "good"
+    if 40 <= rate <= 120: return "warn"
+    return "bad"
+
+def steps_level(steps):
+    # JAMA 연구에서 비교한 <4,000 / 4,000~7,999 / 8,000 이상 구간.
+    if steps >= 8000: return "good"
+    if steps >= 4000: return "warn"
+    return "bad"
+
+def screen_time_level(hours):
+    # Canadian 24-Hour Movement Guidelines의 여가 화면시간 3시간 이하 권고.
+    if hours <= 3: return "good"
+    if hours <= 6: return "warn"
+    return "bad"
 
 if not st.session_state.analyzed:
     st.markdown("""
@@ -338,6 +428,12 @@ if not st.session_state.analyzed:
     .scale-right { color:#75839a !important; font-size:11px !important; text-align:right !important; }
     [data-testid="stCaptionContainer"] p { font-size:11px !important; }
 
+    #[data-testid="stSlider"] [role="group"] > div > div:first-child,
+    #[data-testid="stSlider"] [role="group"] > div > div:nth-child(2),
+    #[data-testid="stRadioOption"] > div > div > div:first-child {
+    #   filter: hue-rotate(220deg) !important;
+    #}
+
     div[data-testid="stFormSubmitButton"] {
         margin-top: 14px !important;
     }
@@ -364,6 +460,10 @@ if not st.session_state.analyzed:
     </style>
     """, unsafe_allow_html=True)
     st.markdown('<div class="form-title">핵심 생활 습관 입력</div><div class="form-guide">정확한 분석을 위해 정보를 입력해주세요.</div>',unsafe_allow_html=True)
+
+#     def field_label(text,required=True):
+#         star='<span style="color:#e5484d;font-weight:900">*</span>' if required else '<span style="color:#758797;font-size:.82rem;font-weight:600">(선택)</span>'
+#         st.markdown(f'<div style="font-size:1rem;font-weight:700;margin:.2rem 0 .35rem">{text} {star}</div>',unsafe_allow_html=True)
 
     def section_header(icon,title,description,tone="blue"):
         icon_svg={
