@@ -17,7 +17,7 @@ except Exception:                      # 터미널에서 직접 실행할 때(�
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# 앞 경로부터 탐색. 파일이 없으면 None을 돌려 화면이 기존 로직으로 폴백합니다.
+# 앞 경로부터 탐색. 하나도 없으면 None을 돌려 화면이 안내 카드로 폴백합니다.
 MODEL_CANDIDATES = {
     # 수면의 질 3분류 -> 양호/주의/위험
     "quality": [
@@ -28,8 +28,10 @@ MODEL_CANDIDATES = {
     ],
     # 수면 효율(Sleep_Efficiency) 회귀 -> 수면 건강 점수 게이지
     "efficiency": [
+        PROJECT_ROOT / "model" / "efficiency_final_model.pkl",
         PROJECT_ROOT / "model" / "efficiency_model.pkl",
         PROJECT_ROOT / "model" / "sleep_efficiency_model.pkl",
+        PROJECT_ROOT / "data" / "risk_data" / "efficiency_final_model.pkl",
         PROJECT_ROOT / "data" / "risk_data" / "efficiency_sleep_efficiency_model.pkl",
     ],
 }
@@ -85,6 +87,7 @@ FIELD_SOURCES = {
     "diastolicbp":             lambda d: d.get("dia"),
     "screentimehours":         lambda d: d.get("phone_hours"),
     "daytimesleepiness":       lambda d: d.get("daytime_sleepiness"),
+    "nightawakenings":         lambda d: d.get("night_awakenings"),UI
     "caffeineintakemg":        lambda d: None if d.get("caffeine") is None else d["caffeine"] * MG_PER_CUP,
     "smokingstatus":           lambda d: {"흡연": "Yes", "비흡연": "No"}.get(d.get("smoking")),
     "alcoholconsumption":      lambda d: {"음주함": "Yes", "음주 안 함": "No"}.get(d.get("recent_alcohol")),
@@ -404,7 +407,7 @@ SAMPLE_INPUT = {
     "age": 32, "gender": "Female", "bmi": 22.5, "sleep": 7.0, "activity": 45,
     "stress": 5, "heart_rate": 70, "daily_steps": 7000, "sys": 120, "dia": 80,
     "phone_hours": 5.0, "daytime_sleepiness": 5, "caffeine": 1.0,
-    "smoking": "비흡연", "recent_alcohol": "음주 안 함",
+    "night_awakenings": 2, "smoking": "비흡연", "recent_alcohol": "음주 안 함",
 }
 
 
