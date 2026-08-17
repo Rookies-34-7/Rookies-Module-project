@@ -587,7 +587,9 @@ else:
         return f'<div class="tile tile-{tone}"><div class="tile-label">{label}</div><div class="tile-value">{value}</div><div class="tile-caption">{caption}</div></div>'
     tiles=[]
     if verdict and verdict["score"] is not None:
-        tiles.append(summary_tile("수면의 질",f'{verdict["score"]} <span class="tile-unit">/ 10</span>',verdict["tone"],verdict["text"]))
+        # 모델이 낼 수 있는 점수가 4~9라 '/10'으로 쓰면 도달 불가능한 만점을 암시하게 됩니다.
+        lo,hi=verdict["score_range"]
+        tiles.append(summary_tile("수면의 질",f'{verdict["score"]}<span class="tile-unit">점</span>',verdict["tone"],f'{verdict["text"]} · {lo}~{hi}점 범위'))
     else:
         tiles.append(summary_tile("수면의 질","—","idle","심박수·혈압·걸음 수 필요"))
     if efficiency:
@@ -624,7 +626,10 @@ else:
         st.markdown('<div class="verdict-label">현재 상태</div>',unsafe_allow_html=True)
         if verdict:
             st.markdown(f'<div class="verdict verdict-{verdict["tone"]}"><span>{verdict["icon"]}</span><span>{verdict["text"]}</span></div>',unsafe_allow_html=True)
-            st.markdown(f'<div class="verdict-note">수면의 질 예측 모델 · 확신도 {max(verdict["proba"].values()):.0%}</div>',unsafe_allow_html=True)
+            # 확신도는 분류 모델에만 있습니다. 회귀 모델이면 예측 점수를 대신 보여줍니다.
+            note=(f'수면의 질 예측 모델 · 확신도 {max(verdict["proba"].values()):.0%}' if verdict["proba"]
+                  else f'수면의 질 예측 모델 · {verdict["score"]}점')
+            st.markdown(f'<div class="verdict-note">{note}</div>',unsafe_allow_html=True)
         else:
             st.markdown('<div class="pending pending-verdict"><div class="pending-body">수면의 질 모델에는 선택 항목인<br>심박수·혈압·걸음 수가 필요합니다.</div></div>',unsafe_allow_html=True)
     st.markdown('<div style="height:28px"></div>',unsafe_allow_html=True)

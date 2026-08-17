@@ -40,6 +40,9 @@ RISK_LEVELS = (("낮음", "good"), ("중간", "warn"), ("높음", "bad"))
 
 # 학습 시 원본 점수(4~9)를 3등급으로 묶은 기준. 등급별 중앙값을 확률 가중평균해 정수 점수를 냅니다.
 QUALITY_SCORE_MID = {"Low": 4.5, "Medium": 6.5, "High": 8.5}
+# 원본 Quality of Sleep이 4~9라 모델도 이 범위만 냅니다. 화면에 '/10'으로 쓰면
+# 도달할 수 없는 만점을 암시하게 되어, 실제 범위를 함께 표기합니다.
+QUALITY_SCORE_RANGE = (4, 9)
 
 # 게이지 눈금. 임상 기준 85%↑ 정상, 학습 범위가 57~99라 0부터 그리면 변별이 안 됩니다.
 EFFICIENCY_GAUGE = {"min": 55, "max": 100, "warn": 75, "good": 85}
@@ -212,8 +215,21 @@ def _build_row(d, columns, choices=None):
     return row, missing
 
 
+def _quality_grade(score):
+    """점수를 등급으로. 학습 시 원본 점수를 묶은 경계(Low 4~5 / Medium 6~7 / High 8~9)와 같습니다."""
+    if score >= 8:
+        return "High"
+    if score >= 6:
+        return "Medium"
+    return "Low"
+
+
 def predict_quality(d):
-    """수면의 질을 예측합니다. 필수 항목이 비면 None (평균 대치는 트리에서 중립이 아님)."""
+    """수면의 질을 예측합니다. 필수 항목이 비면 None (평균 대치는 트리에서 중립이 아님).
+
+    회귀 모델이면 predict()가 원본 점수(4~9)를 바로 주므로 반올림해 씁니다.
+    분류 모델이면 등급 확률을 중앙값으로 가중평균해 같은 형태로 맞춥니다.
+    """
     bundle = load_bundle("quality")
     if bundle is None:
         return None
@@ -222,8 +238,23 @@ def predict_quality(d):
     if X is None:
         return None
 
+    estimator = bundle["estimator"]
+    labels = bundle["labels"] or list(getattr(estimator, "classes_", []))
+    proba = None
     try:
-        averaged = np.average(bundle["estimator"].predict_proba(X), axis=0, weights=weights)
+        if hasattr(estimator, "predict_proba") and labels:
+            averaged = np.average(estimator.predict_proba(X), axis=0, weights=weights)
+            label = str(labels[int(averaged.argmax())])
+            proba = {str(l): float(p) for l, p in zip(labels, averaged)}
+            mids = [QUALITY_SCORE_MID.get(str(l)) for l in labels]
+            if not all(m is not None for m in mids):
+                return None
+            score = int(round(float(np.dot(averaged, mids))))
+        else:
+            # 회귀 모델. 예측값이 원본 점수 스케일이라 그대로 반올림합니다.
+            score = int(round(float(np.average(estimator.predict(X), weights=weights))))
+            score = max(QUALITY_SCORE_RANGE[0], min(QUALITY_SCORE_RANGE[1], score))
+            label = _quality_grade(score)
     except Exception:
         return None
 
@@ -231,22 +262,15 @@ def predict_quality(d):
     choices = _categorical_choices(bundle)
     _, missing = _build_row(d, columns, choices)
     marginal_col = next((c for c in missing if c in choices), None)
-    labels = bundle["labels"] or list(bundle["estimator"].classes_)
-    label = str(labels[int(averaged.argmax())])
     text, tone, icon = QUALITY_LABELS.get(label, (label, "warn", "⚠️"))
-    # 등급이 원본 점수 2개씩(Low 4~5 / Medium 6~7 / High 8~9)을 덮으므로
-    # 등급 중앙값을 확률로 가중평균한 뒤 반올림해 정수 점수를 만듭니다.
-    mids = [QUALITY_SCORE_MID.get(str(l)) for l in labels]
-    score = None
-    if all(m is not None for m in mids):
-        score = int(round(float(np.dot(averaged, mids))))
     return {
         "label": label,
         "text": text,
         "tone": tone,
         "icon": icon,
         "score": score,
-        "proba": {str(l): float(p) for l, p in zip(labels, averaged)},
+        "score_range": QUALITY_SCORE_RANGE,
+        "proba": proba,
         "marginalized": marginal_col,
     }
 
